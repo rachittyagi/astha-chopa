@@ -19,7 +19,7 @@ module.exports = {
       moduleNameMapper: { '^@/(.*)$': '<rootDir>/src/$1' },
     },
   ],
-  collectCoverageFrom: ['src/**/*.{ts,tsx}', '!src/**/__tests__/**', '!src/app/**'],
+  collectCoverageFrom: ['src/**/*.{ts,tsx}', '!src/**/__tests__/**', '!src/**/testing/**', '!src/app/**'],
   // 90% line coverage on engine and bot (R-TEST-01).
   coverageThreshold: {
     './src/engine/': { lines: 90 },

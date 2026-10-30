@@ -102,6 +102,8 @@ applyAction(state, action): { state: GameState; events: GameEvent[] } | { error:
 pathFor(seat): Square[]
 ```
 
+As built in M1 (`src/engine/types.ts` is authoritative): every action carries `seat` (so the engine can return NotYourTurn); `applyAction` returns `{ ok: true, state, events } | { ok: false, error }`; `Move` also has `value` and `pawnIds`; `GameState` also has `seed` and `inBonusSequence`; `PawnEntered` carries its square and `PoolDiscarded`/`TurnForfeited` carry the lost throws. The engine itself caps `log` at `LOG_LIMIT` (200), so persistence saves the state as is.
+
 Persisted data (device only): key `game.v1` = JSON GameState with `log` capped to the last 200 entries; key `settings.v1` = theme, sound, haptics, animationSpeed, language.
 
 ## Sequence: one human turn

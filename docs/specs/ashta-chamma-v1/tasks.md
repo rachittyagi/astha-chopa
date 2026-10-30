@@ -25,58 +25,58 @@ Companion to [requirements.md](requirements.md) and [design.md](design.md). Tick
 
 ## M1 Engine core
 
-- [ ] TASK-7: `engine/types.ts` with all types from design (SeatId, Square, Throw, Pawn, Seat, DoubleRec, GameState, Action, Move, GameEvent, EngineError)
+- [x] TASK-7: `engine/types.ts` with all types from design (SeatId, Square, Throw, Pawn, Seat, DoubleRec, GameState, Action, Move, GameEvent, EngineError)
   Links: DES-3, DES-8 | REQ-11
   Outcome: types compile; no runtime code.
-- [ ] TASK-8: `engine/board.ts` — PATH_A, rot, pathFor, SAFE_SQUARES, isSafe, ringOf
+- [x] TASK-8: `engine/board.ts` — PATH_A, rot, pathFor, SAFE_SQUARES, isSafe, ringOf
   Links: DES-1 | REQ-2
   Outcome: R-TEST-02 path tests pass for all four seats.
-- [ ] TASK-9: `engine/rng.ts` mulberry32 step function
+- [x] TASK-9: `engine/rng.ts` mulberry32 step function
   Links: DES-2 | REQ-12
   Outcome: fixed seed yields a fixed known sequence (snapshot test).
-- [ ] TASK-10: `engine/throws.ts` four-shell throw with ids and faces
+- [x] TASK-10: `engine/throws.ts` four-shell throw with ids and faces
   Links: DES-2 | REQ-3
   Outcome: R-TEST-03 distribution test passes (160,000 throws, ±1 pp).
-- [ ] TASK-11: `engine/config.ts` RuleConfig type, CLASSIC, option metadata
+- [x] TASK-11: `engine/config.ts` RuleConfig type, CLASSIC, option metadata
   Links: DES-4 | REQ-9
   Outcome: CLASSIC matches the PRD defaults table (test).
-- [ ] TASK-12: `engine/setup.ts` createGame + validateSeats (2–4 non-empty, ≥ 1 human, unique colours, pawns per entryRule)
+- [x] TASK-12: `engine/setup.ts` createGame + validateSeats (2–4 non-empty, ≥ 1 human, unique colours, pawns per entryRule)
   Links: DES-3 | REQ-1, REQ-5
   Outcome: tests for valid/invalid seat sets, empty seats have no pawns, onStart vs needChammaOrAshta start positions.
-- [ ] TASK-13: `engine/occupancy.ts` derived occupants per square
+- [x] TASK-13: `engine/occupancy.ts` derived occupants per square
   Links: DES-5 | REQ-11
   Outcome: unit tests; no occupancy field exists in GameState.
-- [ ] TASK-14: `engine/movement.ts` target() and squaresPassed() for block, circle wrap and exact-count home
+- [x] TASK-14: `engine/movement.ts` target() and squaresPassed() for block, circle wrap and exact-count home
   Links: DES-5 | REQ-5
   Outcome: tests: overshoot past 24 illegal, hitless stop at 15 (block), wrap mod 16 (circle), hitter enters inner ring.
-- [ ] TASK-15: `engine/legal.ts` legalMoves for Enter and single-pawn Move with landing-on-opponent-double rule and de-duplication
+- [x] TASK-15: `engine/legal.ts` legalMoves for Enter and single-pawn Move with landing-on-opponent-double rule and de-duplication
   Links: DES-5 | REQ-5, REQ-11
   Outcome: tests: enter only with 4/8, one pawn per entry, equivalent moves listed once.
-- [ ] TASK-16: Hits in the reducer: single-opponent hit, return to index 0, hasHit, InnerRingUnlocked, one bonus per hitting move
+- [x] TASK-16: Hits in the reducer: single-opponent hit, return to index 0, hasHit, InnerRingUnlocked, one bonus per hitting move
   Links: DES-6 | REQ-6
   Outcome: tests: hit on outer and inner ring, no hit on safe square or home, hit pawn moves again with any throw.
-- [ ] TASK-17: `engine/reducer.ts` Throw handling: pool, chaining on 4/8, triple penalty clearing pool and queued bonuses
+- [x] TASK-17: `engine/reducer.ts` Throw handling: pool, chaining on 4/8, triple penalty clearing pool and queued bonuses
   Links: DES-8 | REQ-4
   Outcome: tests for chaining, phase switch on 1/2/3, triple penalty in first and bonus sequences (R-TURN-04).
-- [ ] TASK-18: Reducer Enter/Move handling and `settle()` (discard only when nothing playable, bonus sequences, PoolDiscarded)
+- [x] TASK-18: Reducer Enter/Move handling and `settle()` (discard only when nothing playable, bonus sequences, PoolDiscarded)
   Links: DES-8 | REQ-4
   Outcome: tests: deferred-playable throw kept (4 enters then 3 moves), pool auto-discarded with event, bonus taken after pool.
-- [ ] TASK-19: Reducer validation and typed errors (NotYourTurn, WrongPhase, IllegalMove) with no state change
+- [x] TASK-19: Reducer validation and typed errors (NotYourTurn, WrongPhase, IllegalMove) with no state change
   Links: DES-8 | REQ-11
   Outcome: tests for each error; input deep-frozen in all reducer tests.
-- [ ] TASK-20: `engine/turn.ts` endTurn, nextSeat skipping empty/finished, prevTurnStart, TurnPassed
+- [x] TASK-20: `engine/turn.ts` endTurn, nextSeat skipping empty/finished, prevTurnStart, TurnPassed
   Links: DES-9 | REQ-4, REQ-1
   Outcome: tests for 2-, 3- and 4-seat rotations with empty seats.
-- [ ] TASK-21: Finishing and ranking: PawnHome, PlayerFinished, R-TURN-05 discard, playToEnd on/off, 2-player end, GameOver
+- [x] TASK-21: Finishing and ranking: PawnHome, PlayerFinished, R-TURN-05 discard, playToEnd on/off, 2-player end, GameOver
   Links: DES-8, DES-9 | REQ-8, REQ-4
   Outcome: tests for each case, last remaining seat gets last rank.
-- [ ] TASK-22: Stalemate detection (canEverMove over {1,2,3,4,8}) and circle fallback for hitless players
+- [x] TASK-22: Stalemate detection (canEverMove over {1,2,3,4,8}) and circle fallback for hitless players
   Links: DES-9, DES-5 | REQ-4
   Outcome: scenario test with all pawns stuck at 15 emits StalemateBroken and then allows wrap.
-- [ ] TASK-23: `engine/index.ts` public API (createGame, legalMoves, applyAction, pathFor) and API surface test
+- [x] TASK-23: `engine/index.ts` public API (createGame, legalMoves, applyAction, pathFor) and API surface test
   Links: DES-8 | REQ-11
   Outcome: app/bot import only from `src/engine/index.ts`.
-- [ ] TASK-24: Purity and no-ambient-access test (deep-freeze, Date/Math.random spied and never called)
+- [x] TASK-24: Purity and no-ambient-access test (deep-freeze, Date/Math.random spied and never called)
   Links: DES-8 | REQ-11, REQ-12
   Outcome: test passes across a scripted game.
 

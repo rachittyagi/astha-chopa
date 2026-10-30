@@ -1,4 +1,16 @@
-// Public engine API. Filled in during M1 (TASK-23).
+// Public engine API. The app and bot import only from here.
+
+export { pathFor, isSafe, ringOf, SAFE_SQUARES, HOME_INDEX, LAST_OUTER_INDEX } from './board';
+export type { Ring } from './board';
+export { CLASSIC, RULE_KEYS, RULE_OPTIONS, isValidConfig } from './config';
+export type { RuleConfig, RuleKey } from './config';
+export { legalMoves } from './legal';
+export { applyAction, LOG_LIMIT } from './reducer';
+export { createGame, validateSeats, PAWNS_PER_SEAT } from './setup';
+export type { SeatProblem } from './setup';
+export { THROW_ODDS, THROW_VALUES } from './throws';
+export { nextRandom } from './rng';
+export * from './types';
 
 // Version of the saved GameState shape (R-SAVE-04).
 export const SCHEMA_VERSION = 1;
