@@ -80,6 +80,34 @@ export function playGame(players: number, mode: ConfigMode, seed: number): GameR
   };
 }
 
+/** Two-player Classic games between two levels, alternating who sits on A (moves first). */
+export function headToHead(a: BotLevel, b: BotLevel, games: number, firstSeed = 1) {
+  let aWins = 0;
+  const problems: string[] = [];
+  for (let seed = firstSeed; seed < firstSeed + games; seed++) {
+    const [first, second] = seed % 2 === 0 ? [a, b] : [b, a];
+    const seats: SeatConfig[] = [
+      { kind: 'human', name: 'Player 1', color: COLORS[0]!, botLevel: first },
+      { kind: 'empty', name: 'Player 2', color: COLORS[1]! },
+      { kind: 'bot', name: 'Player 3', color: COLORS[2]!, botLevel: second },
+      { kind: 'empty', name: 'Player 4', color: COLORS[3]! },
+    ];
+    let state = createGame(seats, CLASSIC, seed, `h2h-${seed}`, 0);
+    while (state.phase !== 'finished' && state.turnNumber <= MAX_TURNS) {
+      const { action, botRngState } = chooseAction(state);
+      const result = applyAction(withBotRng(state, botRngState), action);
+      if (!result.ok) {
+        problems.push(`seed ${seed}: ${result.error.message}`);
+        break;
+      }
+      state = result.state;
+    }
+    const winner = state.seats.find((s) => s.id === state.rankings[0]);
+    if (winner?.botLevel === a) aWins++;
+  }
+  return { winRate: aWins / games, problems };
+}
+
 function arg(name: string, fallback: string): string {
   const i = process.argv.indexOf(`--${name}`);
   return i >= 0 && process.argv[i + 1] ? process.argv[i + 1]! : fallback;
@@ -95,6 +123,23 @@ function main(): void {
   const games = Number(arg('games', '10000'));
   const firstSeed = Number(arg('seed', '1'));
   let failed = false;
+
+  const vs = arg('vs', '');
+  if (vs) {
+    const [a, b] = vs.split(',') as [BotLevel, BotLevel];
+    const started = Date.now();
+    const { winRate, problems } = headToHead(a, b, games, firstSeed);
+    const margin = 1.96 * Math.sqrt((winRate * (1 - winRate)) / games);
+    console.log(
+      `${a} vs ${b}, 2 players, ${games} games in ${((Date.now() - started) / 1000).toFixed(1)}s: ` +
+        `${a} wins ${(100 * winRate).toFixed(1)}% ± ${(100 * margin).toFixed(1)} (95%)`,
+    );
+    if (problems.length > 0) {
+      problems.slice(0, 5).forEach((p) => console.error(`  ${p}`));
+      process.exit(1);
+    }
+    return;
+  }
 
   for (const mode of modes) {
     for (const players of playerCounts) {

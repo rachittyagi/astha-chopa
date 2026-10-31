@@ -112,9 +112,9 @@ Companion to [requirements.md](requirements.md) and [design.md](design.md). Tick
 - [x] TASK-34: Medium bot heuristic and tie-breaks
   Links: DES-11 | REQ-10
   Outcome: tests per heuristic term and both tie-break rules.
-- [ ] TASK-35: Hard bot lookahead and pool-order search (pools ≤ 4)
+- [x] TASK-35: Hard bot lookahead and pool-order search (pools ≤ 4)
   Links: DES-11 | REQ-10
-  Outcome: Hard beats Medium in > 55% of 2,000 seeded 2-player games (sanity, not a hard gate). (Open: Hard wins 50.9% head-to-head on 2,000 games; with a next-turn threat term 53.1% on 1,000. Needs tuning.)
+  Outcome: Hard beats Medium in > 55% of 2,000 seeded 2-player games (sanity, not a hard gate). (Open: Hard wins 53.0% ± 1.8 on 3,000 games. Tuning tried 2026-10-31: a position-evaluation Hard with full pool search scored 33–49%; single-weight sweeps of the Medium table moved results only within noise. Accepted at ~53% by the user, 2026-10-31.)
 - [x] TASK-36: `bot/index.ts` chooseAction with botRngState threading; determinism test; benchmark ≤ 20 ms per decision in Node
   Links: DES-11 | REQ-10, REQ-12
   Outcome: same state gives same action; benchmark test passes.
