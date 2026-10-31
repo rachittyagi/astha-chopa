@@ -2,7 +2,17 @@ import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Animated, Easing, Platform, Pressable, Text, View } from 'react-native';
 
-import { isSafe, pathFor, ringOf, squareOf, type GameState, type Pawn, type SeatId, type Square } from '@/engine';
+import {
+  isSafe,
+  pathFor,
+  ringOf,
+  sameSquare,
+  SEAT_IDS,
+  squareOf,
+  type GameState,
+  type Pawn,
+  type Square,
+} from '@/engine';
 import { textOn } from '@/ui/contrast';
 import { PAWN_COLORS, SEAT_SHAPES, useThemedStyles, type Theme } from '@/ui/theme';
 
@@ -28,40 +38,45 @@ const keyOf = ([r, c]: Square) => r * 5 + c;
 const useNative = Platform.OS !== 'web';
 const BORDER = 3;
 
+/** One pawn as drawn: every pawn gets its own token, so stacks are easy to count. */
 interface Token {
-  key: string;
-  seat: SeatId;
-  pawns: Pawn[];
+  pawn: Pawn;
+  /** Where it is drawn now: its square, or where its pending animation starts. */
   square: Square;
+  /** Its place in the little grid of pawns sharing that square. */
+  slot: number;
+  /** How many pawns share the square (sets the grid size). */
+  crowd: number;
   motion?: Motion;
-  /** Pawns not yet in play, shown on their start square (needChammaOrAshta). */
-  waiting?: boolean;
+  /** Not yet in play (needChammaOrAshta), shown on its start square. */
+  waiting: boolean;
 }
 
-/** Tokens to draw: pawns grouped by square and seat, with animating pawns drawn on their own. */
+/** Side of the grid used for n pawns on one square: 1, 2×2, 3×3 or 4×4. */
+const gridFor = (n: number) => (n <= 1 ? 1 : n <= 4 ? 2 : n <= 9 ? 3 : 4);
+
 function tokensFor(state: GameState, motions: Motion[]): Token[] {
   const moving = new Map<string, Motion>();
   motions.forEach((m) => m.pawnIds.forEach((id) => moving.has(id) || moving.set(id, m)));
 
-  const groups = new Map<string, Token>();
-  const loose: Token[] = [];
-  for (const pawn of state.pawns) {
-    const motion = moving.get(pawn.id);
-    if (motion) {
-      const key = `m${motion.id}`;
-      const existing = loose.find((t) => t.key === key);
-      if (existing) existing.pawns.push(pawn);
-      else loose.push({ key, seat: pawn.seat, pawns: [pawn], square: motion.from, motion });
-      continue;
-    }
-    const waiting = pawn.pathIndex === null;
-    const square = waiting ? pathFor(pawn.seat)[0]! : squareOf(pawn)!;
-    const key = waiting ? `w${pawn.seat}` : `${pawn.seat}${keyOf(square)}`;
-    const group = groups.get(key) ?? { key, seat: pawn.seat, pawns: [], square, waiting };
-    group.pawns.push(pawn);
-    groups.set(key, group);
-  }
-  return [...groups.values(), ...loose];
+  const order = (p: Pawn) => SEAT_IDS.indexOf(p.seat) * 10 + (p.pathIndex === null ? 5 : 0) + Number(p.id.slice(1));
+  const placed = state.pawns
+    .map((pawn) => {
+      const motion = moving.get(pawn.id);
+      const waiting = pawn.pathIndex === null;
+      const square = motion ? motion.from : waiting ? pathFor(pawn.seat)[0]! : squareOf(pawn)!;
+      return { pawn, square, motion, waiting };
+    })
+    .sort((a, b) => order(a.pawn) - order(b.pawn));
+
+  // Pawns waiting to animate are grouped by their motion; the rest by square.
+  const groupKey = (p: (typeof placed)[number]) => (p.motion ? `m${p.motion.id}` : `s${keyOf(p.square)}`);
+  const groups = new Map<string, typeof placed>();
+  placed.forEach((p) => groups.set(groupKey(p), [...(groups.get(groupKey(p)) ?? []), p]));
+  return placed.map((p) => {
+    const group = groups.get(groupKey(p))!;
+    return { ...p, slot: group.indexOf(p), crowd: group.length };
+  });
 }
 
 const makeStyles = (c: Theme) => ({
@@ -83,12 +98,22 @@ const makeStyles = (c: Theme) => ({
     borderWidth: 2,
     borderColor: '#ffffffcc',
   },
-  movable: { borderColor: c.highlight, borderWidth: 4 },
-  waiting: { opacity: 0.55, borderStyle: 'dashed' as const, borderColor: c.boardLine },
-  label: { fontWeight: '700' as const, fontSize: 13 },
+  movable: { borderColor: c.highlight, borderWidth: 3 },
+  waiting: { opacity: 0.5, borderStyle: 'dashed' as const, borderColor: c.boardLine },
+  label: { fontWeight: '700' as const },
 });
 
-export function Board({ state, size, view, onPawnPress, onWaitingPress, motions = [], stepMs = 140, knockbackMs = 320, onMotionDone }: Props) {
+export function Board({
+  state,
+  size,
+  view,
+  onPawnPress,
+  onWaitingPress,
+  motions = [],
+  stepMs = 140,
+  knockbackMs = 320,
+  onMotionDone,
+}: Props) {
   const { t } = useTranslation();
   const { styles } = useThemedStyles(makeStyles);
   const cell = (size - 2 * BORDER) / 5;
@@ -111,21 +136,29 @@ export function Board({ state, size, view, onPawnPress, onWaitingPress, motions 
     return () => animation.stop();
   }, [active, progress, stepMs, knockbackMs, onMotionDone]);
 
-  const colorOf = (seat: SeatId) => state.seats.find((s) => s.id === seat)!.color;
-  const tokens = tokensFor(state, motions);
-  const perSquare = new Map<number, Token[]>();
-  tokens.forEach((tok) => perSquare.set(keyOf(tok.square), [...(perSquare.get(keyOf(tok.square)) ?? []), tok]));
+  const colorOf = (pawn: Pawn) => state.seats.find((s) => s.id === pawn.seat)!.color;
 
   const pawnLabel = (pawn: Pawn) => {
-    const index = pawn.pathIndex ?? 0;
+    const color = t(`colors.${colorOf(pawn)}`);
+    const n = Number(pawn.id.slice(1)) + 1;
+    if (pawn.pathIndex === null) return t('game.a11y.waitingPawn', { color, n });
+    const index = pawn.pathIndex;
     return t('game.a11y.pawn', {
-      color: t(`colors.${colorOf(pawn.seat)}`),
-      n: Number(pawn.id.slice(1)) + 1,
+      color,
+      n,
       where:
-        pawn.pathIndex === 24
+        index === 24
           ? t('game.a11y.atHome')
           : t('game.a11y.square', { index: index + 1, ring: t(`game.ring.${ringOf(index)}`) }),
     });
+  };
+
+  /** A double's square is tinted in its owner's colour, so stacks stand out (R-UI-07). */
+  const doubleTint = (square: Square) => {
+    const d = state.doubles.find((x) => sameSquare(x.square, square));
+    if (!d) return undefined;
+    const owner = state.seats.find((s) => s.id === d.owner)!;
+    return { backgroundColor: `${PAWN_COLORS[owner.color]}55` };
   };
 
   return (
@@ -137,7 +170,12 @@ export function Board({ state, size, view, onPawnPress, onWaitingPress, motions 
             return (
               <View
                 key={c}
-                style={[styles.cell, { width: cell, height: cell }, preview.has(keyOf(square)) && styles.preview]}
+                style={[
+                  styles.cell,
+                  { width: cell, height: cell },
+                  doubleTint(square),
+                  preview.has(keyOf(square)) && styles.preview,
+                ]}
               >
                 {isSafe(square) && (
                   <>
@@ -151,15 +189,12 @@ export function Board({ state, size, view, onPawnPress, onWaitingPress, motions 
         </View>
       ))}
 
-      {tokens.map((tok) => {
-        const shared = perSquare.get(keyOf(tok.square)) ?? [tok];
-        const slot = shared.indexOf(tok);
-        const crowded = shared.length > 1;
-        const tokenSize = crowded ? cell * 0.44 : cell * 0.66;
-        const slotX = crowded ? (slot % 2) * (cell / 2) + cell / 4 : cell / 2;
-        const slotY = crowded ? Math.floor(slot / 2) * (cell / 2) + cell / 4 : cell / 2;
-        const left = tok.square[1] * cell + slotX - tokenSize / 2;
-        const top = tok.square[0] * cell + slotY - tokenSize / 2;
+      {tokensFor(state, motions).map((tok) => {
+        const grid = gridFor(tok.crowd);
+        const box = cell / grid;
+        const tokenSize = grid === 1 ? cell * 0.62 : box * 0.84;
+        const left = tok.square[1] * cell + (tok.slot % grid) * box + box / 2 - tokenSize / 2;
+        const top = tok.square[0] * cell + Math.floor(tok.slot / grid) * box + box / 2 - tokenSize / 2;
 
         const isActive = tok.motion !== undefined && tok.motion === active;
         const points = [tok.square, ...(tok.motion?.path ?? [])];
@@ -180,31 +215,25 @@ export function Board({ state, size, view, onPawnPress, onWaitingPress, motions 
             ]
           : [];
 
-        const canEnter = !!tok.waiting && view.canEnter && tok.seat === state.currentSeat;
-        const target = tok.motion || tok.waiting ? undefined : tok.pawns.find((p) => movable.has(p.id));
-        const tappable = !!target || canEnter;
-        const seatName = state.seats.find((s) => s.id === tok.seat)!.name;
-        const color = PAWN_COLORS[colorOf(tok.seat)]!;
-        const { shape, symbol } = SEAT_SHAPES[tok.seat];
-        const radius =
-          shape === 'circle' ? tokenSize / 2 : shape === 'rounded' ? tokenSize / 3 : tokenSize * 0.12;
+        const canEnter = tok.waiting && view.canEnter && tok.pawn.seat === state.currentSeat;
+        const canMove = !tok.motion && !tok.waiting && movable.has(tok.pawn.id);
+        const tappable = canEnter || canMove;
+        const color = PAWN_COLORS[colorOf(tok.pawn)]!;
+        const { shape, symbol } = SEAT_SHAPES[tok.pawn.seat];
+        const radius = shape === 'circle' ? tokenSize / 2 : shape === 'rounded' ? tokenSize / 3 : tokenSize * 0.12;
         const turn = shape === 'diamond' ? [{ rotate: '45deg' }] : [];
-        const inner = shape === 'diamond' ? tokenSize * 0.8 : tokenSize;
+        const inner = shape === 'diamond' ? tokenSize * 0.78 : tokenSize;
 
         return (
           <Animated.View
-            key={tok.key}
+            key={tok.pawn.id}
             style={{ position: 'absolute', left, top, width: tokenSize, height: tokenSize, transform: translate }}
           >
             <Pressable
               disabled={!tappable}
-              onPress={() => (canEnter ? onWaitingPress?.() : target && onPawnPress(target.id))}
+              onPress={() => (canEnter ? onWaitingPress?.() : onPawnPress(tok.pawn.id))}
               accessibilityRole="button"
-              accessibilityLabel={
-                tok.waiting
-                  ? t('game.a11y.waitingArea', { name: seatName, count: tok.pawns.length })
-                  : pawnLabel(tok.pawns[0]!)
-              }
+              accessibilityLabel={pawnLabel(tok.pawn)}
               accessibilityState={{ disabled: !tappable }}
               hitSlop={Math.max(0, (44 - tokenSize) / 2)}
               style={{ width: tokenSize, height: tokenSize, alignItems: 'center', justifyContent: 'center' }}
@@ -212,19 +241,13 @@ export function Board({ state, size, view, onPawnPress, onWaitingPress, motions 
               <View
                 style={[
                   styles.token,
-                  {
-                    width: inner,
-                    height: inner,
-                    borderRadius: radius,
-                    backgroundColor: color,
-                    transform: turn,
-                  },
+                  { width: inner, height: inner, borderRadius: radius, backgroundColor: color, transform: turn },
                   tok.waiting && styles.waiting,
                   tappable && styles.movable,
                 ]}
               />
-              <Text style={[styles.label, { color: textOn(color) }]}>
-                {tok.pawns.length > 1 ? tok.pawns.length : symbol}
+              <Text style={[styles.label, { color: textOn(color), fontSize: Math.max(9, tokenSize * 0.38) }]}>
+                {symbol}
               </Text>
             </Pressable>
           </Animated.View>

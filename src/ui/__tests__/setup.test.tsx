@@ -2,6 +2,7 @@ import '@/i18n';
 
 import { fireEvent, render, screen } from '@testing-library/react-native';
 
+import { CLASSIC } from '@/engine';
 import { nextColor, presetSeats, setKind } from '@/ui/setup/presets';
 import { SetupScreen } from '@/ui/screens/SetupScreen';
 import { gameStore } from '@/ui/testing/appStoreMock';
@@ -46,7 +47,7 @@ describe('setup presets (R-MODE-01..04)', () => {
 describe('Game setup screen (TASK-44)', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    gameStore.setState({ saved: null, game: null });
+    gameStore.setState({ saved: null, game: null, lastSetup: null });
   });
 
   it('shows the playing seats with default names', async () => {
@@ -59,16 +60,25 @@ describe('Game setup screen (TASK-44)', () => {
 
   it('disables Start until at least one seat is human', async () => {
     await render(<SetupScreen />);
-    for (const b of screen.getAllByText('Bot')) await fireEvent.press(b);
+    for (const b of screen.getAllByText('Computer')) await fireEvent.press(b);
     expect(screen.getByText('At least one player must be human.')).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Start' })).toBeDisabled();
   });
 
-  it('Start creates the game and opens the game screen', async () => {
+  it('first time: you against one computer player; Start creates the game and remembers it', async () => {
     await render(<SetupScreen />);
     await fireEvent.press(screen.getByRole('button', { name: 'Start' }));
-    expect(gameStore.getState().game?.seats.map((s) => s.kind)).toEqual(['human', 'empty', 'human', 'empty']);
+    expect(gameStore.getState().game?.seats.map((s) => s.kind)).toEqual(['human', 'empty', 'bot', 'empty']);
+    expect(gameStore.getState().lastSetup?.seats.map((s) => s.kind)).toEqual(['human', 'empty', 'bot', 'empty']);
     expect(mockRouter.replace).toHaveBeenCalledWith('/game');
+  });
+
+  it('opens with the players and rules used last time', async () => {
+    const seats = presetSeats(3).map((s, i) => (i === 1 ? { ...s, name: 'Dadi' } : s));
+    gameStore.setState({ lastSetup: { seats, config: { ...CLASSIC, noHitBehavior: 'circle' } } });
+    await render(<SetupScreen />);
+    expect(screen.getByDisplayValue('Dadi')).toBeTruthy();
+    expect(screen.getByText('Keep circling the outer ring')).toBeTruthy();
   });
 
   it('Custom rules reveal every toggle and are used for the game', async () => {

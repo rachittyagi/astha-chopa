@@ -10,7 +10,7 @@ import { cuesFor, playCues, speak } from '@/services/feedback';
 import { gameStore, settingsStore, useGame, useSettings } from '@/store/app';
 import { Button, Title } from '@/ui/common';
 import { Board } from '@/ui/game/Board';
-import { MoveChoice, PoolChips, SeatMark, SeatPanels, Shells, TurnBanner } from '@/ui/game/Controls';
+import { MoveChoice, PoolChips, SeatMark, Shells, TurnBanner } from '@/ui/game/Controls';
 import { messageFor, throwPhrase } from '@/ui/game/messages';
 import { durations, motionsFor, type Motion } from '@/ui/game/motion';
 import { selectionView, tapPawn, tapThrow, tapWaiting, type SelectionView, type TapOutcome } from '@/ui/game/selection';
@@ -102,7 +102,7 @@ function useEventFeedback() {
 
 const makeStyles = (c: Theme) => ({
   safe: { flex: 1, backgroundColor: c.background },
-  phone: { flex: 1, padding: 16, gap: 10 },
+  phone: { flex: 1, padding: 12, gap: 12 },
   top: { flexDirection: 'row' as const, alignItems: 'center' as const, gap: 8 },
   flex: { flex: 1 },
   center: { alignItems: 'center' as const, justifyContent: 'center' as const },
@@ -114,7 +114,7 @@ const makeStyles = (c: Theme) => ({
     borderRadius: 12,
   },
   calloutText: { color: c.onOverlay, fontSize: 20, fontWeight: '700' as const, textAlign: 'center' as const },
-  hint: { color: c.muted, fontSize: 15 },
+  hint: { color: c.text, fontSize: 18 },
   overlay: { flex: 1, backgroundColor: c.overlay, justifyContent: 'center' as const, padding: 24 },
   sheet: {
     backgroundColor: c.surface,
@@ -185,6 +185,7 @@ function TurnControls({ game, seat, human, view, lastThrow, rollMs, styles, onTa
       {human && game.phase === 'throwing' && (
         <Button
           label={game.pool.length > 0 ? t('game.throwAgain') : t('game.throw')}
+          size="large"
           onPress={() => gameStore.getState().dispatch({ type: 'Throw', seat: seat.id })}
         />
       )}
@@ -244,7 +245,7 @@ export function GameScreen() {
 
   const boardSize = tablet
     ? Math.min(height - 2 * SIDE_PANEL - 40, width - 2 * SIDE_PANEL - 40)
-    : Math.min(width - 32, height * 0.5);
+    : Math.min(width - 24, height * 0.52);
   const board = (
     <View style={styles.center}>
       <Board
@@ -405,7 +406,6 @@ export function GameScreen() {
           </View>
           {pauseButton}
         </View>
-        <SeatPanels state={game} />
         {board}
         {controls}
         {endNow}

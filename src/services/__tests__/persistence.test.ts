@@ -1,6 +1,8 @@
 import { applyAction, legalMoves, type Action, type GameState } from '@/engine';
 import { game } from '@/engine/testing/fixtures';
-import { GAME_KEY, loadGame, parseSavedGame, saveGame } from '@/services/persistence';
+import { GAME_KEY, loadGame, loadSetup, parseSavedGame, parseSetup, saveGame, saveSetup, SETUP_KEY } from '@/services/persistence';
+import { CLASSIC } from '@/engine';
+import { seatsOf } from '@/engine/testing/fixtures';
 import { memoryStore } from '@/services/storage';
 
 function step(state: GameState): Action {
@@ -48,5 +50,22 @@ describe('persistence (R-SAVE-01..04)', () => {
     const store = memoryStore();
     store.getItem = () => Promise.reject(new Error('disk'));
     expect(await loadGame(store)).toEqual({ status: 'discarded', reason: 'unreadable' });
+  });
+});
+
+describe('remembered setup', () => {
+  it('round-trips the last players and rules', async () => {
+    const store = memoryStore();
+    const setup = { seats: seatsOf(['human', 'bot', 'empty', 'empty']), config: CLASSIC };
+    await saveSetup(store, setup);
+    expect(await loadSetup(store)).toEqual(setup);
+  });
+
+  it('ignores a missing, corrupt or invalid setup', async () => {
+    expect(await loadSetup(memoryStore())).toBeNull();
+    expect(parseSetup('{oops')).toBeNull();
+    expect(parseSetup(JSON.stringify({ seats: seatsOf(['bot', 'bot', 'empty', 'empty']), config: CLASSIC }))).toBeNull();
+    expect(parseSetup(JSON.stringify({ seats: seatsOf(['human', 'bot', 'empty', 'empty']), config: { nope: 1 } }))).toBeNull();
+    expect(await loadSetup(memoryStore({ [SETUP_KEY]: 'garbage' }))).toBeNull();
   });
 });

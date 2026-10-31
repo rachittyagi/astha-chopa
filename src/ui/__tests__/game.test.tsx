@@ -1,6 +1,6 @@
 import '@/i18n';
 
-import { act, fireEvent, render, screen, within } from '@testing-library/react-native';
+import { act, fireEvent, render, screen } from '@testing-library/react-native';
 import i18next from 'i18next';
 
 import { CLASSIC } from '@/engine';
@@ -26,10 +26,11 @@ describe('Board (TASK-45)', () => {
     expect(screen.getByLabelText('Yellow pawn 1, square 4, outer ring')).toBeDisabled();
   });
 
-  it('shows a count badge on stacked pawns (R-UI-07)', async () => {
-    const state = place(game(), { A0: 3, A1: 3 });
+  it('draws every pawn separately, even when several share a square (R-UI-07)', async () => {
+    const state = place(game(), { A0: 3, A1: 3, A2: 3 });
     await render(<Board state={state} size={300} view={selectionView(state, null, null)} onPawnPress={jest.fn()} />);
-    expect(within(screen.getByLabelText('Red pawn 1, square 4, outer ring')).getByText('2')).toBeTruthy();
+    for (const n of [1, 2, 3]) expect(screen.getByLabelText(`Red pawn ${n}, square 4, outer ring`)).toBeTruthy();
+    expect(screen.getAllByLabelText(/Yellow pawn \d, waiting on the start square/)).toHaveLength(4);
   });
 
   it('draws waiting pawns on their start square; a 4 or 8 makes them tappable', async () => {
@@ -38,16 +39,16 @@ describe('Board (TASK-45)', () => {
     await render(
       <Board state={quiet} size={300} view={selectionView(quiet, null, null)} onPawnPress={jest.fn()} onWaitingPress={onWaitingPress} />,
     );
-    expect(screen.getByLabelText('Player 1: 3 waiting')).toBeDisabled();
-    expect(screen.getByLabelText('Player 3: 4 waiting')).toBeDisabled();
+    expect(screen.getByLabelText('Red pawn 2, waiting on the start square')).toBeDisabled();
+    expect(screen.getByLabelText('Yellow pawn 1, waiting on the start square')).toBeDisabled();
 
     const ready = withPool(place(game(), { A0: 3 }), [4]);
     await render(
       <Board state={ready} size={300} view={selectionView(ready, null, null)} onPawnPress={jest.fn()} onWaitingPress={onWaitingPress} />,
     );
-    await fireEvent.press(screen.getByLabelText('Player 1: 3 waiting'));
+    await fireEvent.press(screen.getByLabelText('Red pawn 4, waiting on the start square'));
     expect(onWaitingPress).toHaveBeenCalled();
-    expect(screen.getByLabelText('Player 3: 4 waiting')).toBeDisabled();
+    expect(screen.getByLabelText('Yellow pawn 1, waiting on the start square')).toBeDisabled();
   });
 });
 
@@ -104,7 +105,7 @@ describe('Game screen (TASK-46, TASK-48)', () => {
   it('enters a pawn from the waiting area with a 4', async () => {
     gameStore.setState({ game: withPool(gameStore.getState().game!, [4, 2]) });
     await render(<GameScreen />);
-    await fireEvent.press(screen.getByLabelText('Player 1: 4 waiting'));
+    await fireEvent.press(screen.getByLabelText('Red pawn 1, waiting on the start square'));
     expect(gameStore.getState().game?.pawns.find((p) => p.id === 'A0')?.pathIndex).toBe(0);
   });
 

@@ -6,16 +6,16 @@ appId: com.asthachopa.app
 - openLink: astha://debug/new?seed=61
 - tapOn: "Throw"
 - tapOn: "Throw again"
-- tapOn: "Player 1: 4 waiting"
+- tapOn: "Red pawn 1, waiting on the start square"
 # Background and return: still on the game screen.
 - pressKey: Home
 - launchApp:
     stopApp: false
 - assertVisible: "Red pawn 1, square 1, outer ring"
-# Kill and relaunch: Home offers Resume and restores the same position.
+# Kill and relaunch: Home offers Continue game and restores the same position.
 - stopApp
 - launchApp:
     clearState: false
-- tapOn: "Resume"
+- tapOn: "Continue game"
 - assertVisible: "Red pawn 1, square 1, outer ring"
 - assertVisible: "Throw of 3"

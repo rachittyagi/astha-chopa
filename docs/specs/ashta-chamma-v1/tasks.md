@@ -236,6 +236,18 @@ Companion to [requirements.md](requirements.md) and [design.md](design.md). Tick
   Links: DES-16 | REQ-17, REQ-19
   Outcome: throwPhrase tests in English and Hindi; spoken after the shells settle.
 
+## v1.2 simpler UI (requested 2026-10-31)
+
+- [x] TASK-72: Remember the last players and rules (`setup.v1`); Home's one large Play starts a game at once with them (Continue game / New game when a save exists); Players & rules is optional
+  Links: DES-13, DES-14 | REQ-13, REQ-15
+  Outcome: persistence round-trip and invalid-setup tests; Home tests for direct Play and Continue.
+- [x] TASK-73: Every pawn drawn separately (grid per square), waiting pawns on the start square, doubles tinted in the owner's colour
+  Links: DES-15 | REQ-16, REQ-17
+  Outcome: Board tests for separate pawns and per-pawn labels; Maestro flows updated.
+- [x] TASK-74: Larger, simpler controls for children and players over 50 (56 pt buttons, 72 pt Play/Throw, 60 pt chips, bigger text, no seat panels on phones)
+  Links: DES-15 | REQ-16, REQ-18
+  Outcome: checked in the browser at phone size (screenshots 13–16).
+
 ## Verification
 
 Gate commands (every milestone):

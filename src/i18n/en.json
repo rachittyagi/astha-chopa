@@ -6,15 +6,19 @@
   },
   "home": {
     "play": "Play",
-    "resume": "Resume",
     "howToPlay": "How to play",
     "settings": "Settings",
     "saveUnreadable": "Your saved game couldn't be read, so it was removed.",
     "saveOldVersion": "Your saved game is from an older version of the app, so it was removed.",
-    "tagline": "Ashta Chamma for 1 to 4 players on one device"
+    "tagline": "Ashta Chamma for 1 to 4 players on one device",
+    "continue": "Continue game",
+    "newGame": "New game",
+    "playersAndRules": "Players & rules",
+    "computer": "{{name}} (computer)",
+    "whoPlays": "Who is playing"
   },
   "setup": {
-    "title": "New game",
+    "title": "Players & rules",
     "players": "Players",
     "playersCount": "{{count}}",
     "seat": {
@@ -25,7 +29,7 @@
     },
     "kind": {
       "human": "Human",
-      "bot": "Bot",
+      "bot": "Computer",
       "empty": "Empty"
     },
     "level": {
@@ -130,8 +134,8 @@
       "shellDown": "mouth down",
       "thrown": "{{name}} threw {{value}}",
       "turn": "{{name}}'s turn",
-      "waitingArea": "{{name}}: {{count}} waiting",
-      "cowrie": "cowrie shell"
+      "cowrie": "cowrie shell",
+      "waitingPawn": "{{color}} pawn {{n}}, waiting on the start square"
     },
     "ring": {
       "outer": "outer",
@@ -139,7 +143,6 @@
       "home": "home"
     },
     "pickEnter": "Tap your waiting pawns on the start square to bring one in",
-    "panelInfo": "{{home}} · {{hit}}",
     "speech": {
       "value": "It's {{value}}",
       "chamma": "Chamma!",

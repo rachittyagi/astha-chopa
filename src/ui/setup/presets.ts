@@ -1,5 +1,7 @@
 // Quick presets for 1–4 human players (R-MODE-01..03). A preset only pre-fills the seats.
 import type { SeatConfig, SeatKind } from '@/engine';
+import type { GameSetup } from '@/services/persistence';
+import { defaultRules } from '@/store/settings';
 import { DEFAULT_SEAT_COLORS, PAWN_COLORS } from '@/ui/theme';
 
 export type PlayerCount = 1 | 2 | 3 | 4;
@@ -43,4 +45,9 @@ export function setKind(seats: SeatConfig[], index: number, kind: SeatKind): Sea
     const { botLevel: _drop, ...rest } = s;
     return kind === 'bot' ? { ...rest, kind, botLevel: s.botLevel ?? 'medium' } : { ...rest, kind };
   });
+}
+
+/** First launch: you against a Medium computer player, Classic rules with the Settings inner-ring default. */
+export function firstSetup(innerRing: 'open' | 'hit'): GameSetup {
+  return { seats: presetSeats(1), config: defaultRules({ innerRing }) };
 }

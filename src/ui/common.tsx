@@ -8,12 +8,12 @@ const makeStyles = (c: Theme) => ({
   screen: { flex: 1, backgroundColor: c.background },
   content: { padding: 16, gap: 12 },
   fill: { flex: 1 },
-  title: { fontSize: 26, fontWeight: '700' as const, color: c.text },
-  body: { fontSize: 16, color: c.text, lineHeight: 22 },
-  muted: { fontSize: 14, color: c.muted },
+  title: { fontSize: 30, fontWeight: '700' as const, color: c.text },
+  body: { fontSize: 18, color: c.text, lineHeight: 26 },
+  muted: { fontSize: 16, color: c.muted },
   button: {
-    minHeight: MIN_TOUCH + 4,
-    borderRadius: 12,
+    minHeight: 56,
+    borderRadius: 14,
     paddingHorizontal: 20,
     alignItems: 'center' as const,
     justifyContent: 'center' as const,
@@ -21,13 +21,15 @@ const makeStyles = (c: Theme) => ({
   primary: { backgroundColor: c.accent },
   secondary: { backgroundColor: c.surface, borderWidth: 2, borderColor: c.accent },
   dim: { opacity: 0.5 },
-  buttonText: { fontSize: 17, fontWeight: '600' as const, textAlign: 'center' as const },
+  buttonText: { fontSize: 19, fontWeight: '600' as const, textAlign: 'center' as const },
+  large: { minHeight: 72, borderRadius: 18 },
+  largeText: { fontSize: 26, fontWeight: '800' as const },
   primaryText: { color: c.onAccent },
   secondaryText: { color: c.accent },
   segmented: { flexDirection: 'row' as const, flexWrap: 'wrap' as const, gap: 6 },
   segment: {
-    minHeight: MIN_TOUCH,
-    paddingHorizontal: 12,
+    minHeight: 48,
+    paddingHorizontal: 14,
     borderRadius: 10,
     borderWidth: 1.5,
     borderColor: c.accent,
@@ -35,7 +37,7 @@ const makeStyles = (c: Theme) => ({
     backgroundColor: c.surface,
   },
   segmentSelected: { backgroundColor: c.accent },
-  segmentText: { color: c.accent, fontWeight: '600' as const },
+  segmentText: { color: c.accent, fontWeight: '600' as const, fontSize: 17 },
   segmentTextSelected: { color: c.onAccent },
   toggle: {
     minHeight: MIN_TOUCH,
@@ -64,11 +66,14 @@ export function Button({
   onPress,
   variant = 'primary',
   disabled = false,
+  size = 'normal',
 }: {
   label: string;
   onPress(): void;
   variant?: 'primary' | 'secondary';
   disabled?: boolean;
+  /** `large` is the one main action on a screen (Play, Throw). */
+  size?: 'normal' | 'large';
 }) {
   const { styles } = useThemedStyles(makeStyles);
   const primary = variant === 'primary';
@@ -81,11 +86,16 @@ export function Button({
       accessibilityState={{ disabled }}
       style={({ pressed }) => [
         styles.button,
+        size === 'large' && styles.large,
         primary ? styles.primary : styles.secondary,
         (pressed || disabled) && styles.dim,
       ]}
     >
-      <Text style={[styles.buttonText, primary ? styles.primaryText : styles.secondaryText]}>{label}</Text>
+      <Text
+        style={[styles.buttonText, size === 'large' && styles.largeText, primary ? styles.primaryText : styles.secondaryText]}
+      >
+        {label}
+      </Text>
     </Pressable>
   );
 }

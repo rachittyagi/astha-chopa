@@ -1,22 +1,22 @@
-// Smaller game-screen pieces: waiting areas, shells, pool chips, banner, seat panels.
+// Smaller game-screen pieces: seat marks, shells, pool chips, turn banner, move choice.
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Animated, Modal, Platform, Pressable, Text, View } from 'react-native';
 
-import type { GameState, Seat, SeatId, Throw } from '@/engine';
+import type { Seat, SeatId, Throw } from '@/engine';
 import { Button } from '@/ui/common';
 import { textOn } from '@/ui/contrast';
 import { Cowrie } from '@/ui/game/Cowrie';
-import { MIN_TOUCH, PAWN_COLORS, SEAT_SHAPES, useThemedStyles, type Theme } from '@/ui/theme';
+import { PAWN_COLORS, SEAT_SHAPES, useThemedStyles, type Theme } from '@/ui/theme';
 
 const makeStyles = (c: Theme) => ({
   shells: { flexDirection: 'row' as const, alignItems: 'center' as const, gap: 8, minHeight: 52 },
   value: { fontSize: 28, fontWeight: '700' as const, color: c.text, marginLeft: 8, minWidth: 24 },
-  chips: { flexDirection: 'row' as const, flexWrap: 'wrap' as const, gap: 8, minHeight: MIN_TOUCH },
+  chips: { flexDirection: 'row' as const, flexWrap: 'wrap' as const, gap: 12, minHeight: 60 },
   chip: {
-    minWidth: MIN_TOUCH,
-    minHeight: MIN_TOUCH,
-    borderRadius: MIN_TOUCH / 2,
+    minWidth: 60,
+    minHeight: 60,
+    borderRadius: 30,
     borderWidth: 2,
     borderColor: c.accent,
     alignItems: 'center' as const,
@@ -25,25 +25,11 @@ const makeStyles = (c: Theme) => ({
   },
   chipActive: { backgroundColor: c.accent },
   chipDisabled: { opacity: 0.35 },
-  chipText: { fontSize: 20, fontWeight: '700' as const, color: c.accent },
+  chipText: { fontSize: 26, fontWeight: '800' as const, color: c.accent },
   chipTextActive: { color: c.onAccent },
-  banner: { paddingVertical: 8, paddingHorizontal: 16, borderRadius: 12 },
-  bannerName: { fontSize: 20, fontWeight: '700' as const },
-  bannerTurn: { fontSize: 15 },
-  panels: { flexDirection: 'row' as const, flexWrap: 'wrap' as const, gap: 8 },
-  panel: {
-    flexDirection: 'row' as const,
-    alignItems: 'center' as const,
-    gap: 6,
-    padding: 6,
-    borderRadius: 8,
-    backgroundColor: c.surface,
-    borderWidth: 2,
-    borderColor: 'transparent',
-  },
-  panelCurrent: { borderColor: c.accent },
-  panelName: { fontWeight: '600' as const, color: c.text, maxWidth: 140 },
-  panelInfo: { fontSize: 12, color: c.muted },
+  banner: { paddingVertical: 10, paddingHorizontal: 16, borderRadius: 14 },
+  bannerName: { fontSize: 24, fontWeight: '800' as const },
+  bannerTurn: { fontSize: 18 },
   overlay: { flex: 1, backgroundColor: c.overlay, justifyContent: 'center' as const, padding: 32 },
   sheet: { backgroundColor: c.surface, borderRadius: 16, padding: 16, gap: 12 },
   mark: { alignItems: 'center' as const, justifyContent: 'center' as const },
@@ -186,36 +172,6 @@ export function TurnBanner({ seat }: { seat: Seat }) {
       <Text style={[styles.bannerTurn, ink]}>
         {seat.kind === 'bot' ? t('game.botTurn', { name: seat.name }) : t('game.yourTurn')}
       </Text>
-    </View>
-  );
-}
-
-export function SeatPanels({ state }: { state: GameState }) {
-  const { t } = useTranslation();
-  const { styles } = useThemedStyles(makeStyles);
-  return (
-    <View style={styles.panels}>
-      {state.seats
-        .filter((s) => s.kind !== 'empty')
-        .map((seat) => {
-          const home = state.pawns.filter((p) => p.seat === seat.id && p.pathIndex === 24).length;
-          return (
-            <View key={seat.id} style={[styles.panel, seat.id === state.currentSeat && styles.panelCurrent]}>
-              <SeatMark seat={seat.id} color={seat.color} />
-              <View>
-                <Text style={styles.panelName} numberOfLines={1}>
-                  {seat.name}
-                </Text>
-                <Text style={styles.panelInfo}>
-                  {t('game.panelInfo', {
-                    home: t('game.home', { count: home }),
-                    hit: t(seat.hasHit ? 'game.hasHit' : 'game.noHitYet'),
-                  })}
-                </Text>
-              </View>
-            </View>
-          );
-        })}
     </View>
   );
 }

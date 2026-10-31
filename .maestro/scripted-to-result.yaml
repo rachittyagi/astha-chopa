@@ -11,4 +11,4 @@ appId: com.asthachopa.app
 - assertVisible: "Player 1"
 - tapOn: "Home"
 - assertVisible: "Play"
-- assertNotVisible: "Resume"
+- assertNotVisible: "Continue game"

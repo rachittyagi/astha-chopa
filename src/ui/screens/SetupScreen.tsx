@@ -17,7 +17,7 @@ import { BOT_LEVELS } from '@/bot';
 import { gameStore, useGame, useSettings } from '@/store/app';
 import { defaultRules } from '@/store/settings';
 import { Button, Screen, Segmented, Title } from '@/ui/common';
-import { nextColor, PLAYER_COUNTS, presetSeats, setKind, type PlayerCount } from '@/ui/setup/presets';
+import { firstSetup, nextColor, PLAYER_COUNTS, presetSeats, setKind, type PlayerCount } from '@/ui/setup/presets';
 import { MIN_TOUCH, PAWN_COLORS, useThemedStyles, type Theme } from '@/ui/theme';
 
 const KINDS: SeatKind[] = ['human', 'bot', 'empty'];
@@ -47,11 +47,15 @@ export function SetupScreen() {
   const router = useRouter();
   const { theme, styles } = useThemedStyles(makeStyles);
   const saved = useGame((s) => s.saved);
-  const [count, setCount] = useState<PlayerCount>(2);
-  const [seats, setSeats] = useState<SeatConfig[]>(() => presetSeats(2));
-  const [mode, setMode] = useState<'classic' | 'custom'>('classic');
   const innerRing = useSettings((s) => s.innerRing);
-  const [custom, setCustom] = useState<RuleConfig>(() => defaultRules({ innerRing }));
+  // Start from the players and rules used last time (remembered between launches).
+  const [initial] = useState(() => gameStore.getState().lastSetup ?? firstSetup(innerRing));
+  const humans = initial.seats.filter((s) => s.kind === 'human').length;
+  const [count, setCount] = useState<PlayerCount>(Math.min(4, Math.max(1, humans)) as PlayerCount);
+  const [seats, setSeats] = useState<SeatConfig[]>(initial.seats);
+  const isClassic = JSON.stringify(initial.config) === JSON.stringify(defaultRules({ innerRing }));
+  const [mode, setMode] = useState<'classic' | 'custom'>(isClassic ? 'classic' : 'custom');
+  const [custom, setCustom] = useState<RuleConfig>(initial.config);
 
   const problems = validateSeats(seats);
   const update = (index: number, patch: Partial<SeatConfig>) =>

@@ -11,16 +11,19 @@ import {
   type EngineError,
   type GameEvent,
   type GameState,
-  type RuleConfig,
-  type SeatConfig,
 } from '@/engine';
-import { clearGame, loadGame, saveGame, type LoadResult } from '@/services/persistence';
+import {
+  clearGame,
+  loadGame,
+  loadSetup,
+  saveGame,
+  saveSetup,
+  type GameSetup,
+  type LoadResult,
+} from '@/services/persistence';
 import type { KeyValueStore } from '@/services/storage';
 
-export interface GameSetup {
-  seats: SeatConfig[];
-  config: RuleConfig;
-}
+export type { GameSetup };
 
 export interface GameStoreDeps {
   storage: KeyValueStore;
@@ -35,6 +38,8 @@ export interface GameStore {
   events: GameEvent[];
   selectedThrowId: number | null;
   selectedPawnId: string | null;
+  /** The players and rules of the last game started, remembered between launches. */
+  lastSetup: GameSetup | null;
   /** A saved game found at launch, offered as Resume. */
   saved: GameState | null;
   /** Set when a save could not be read and was removed (R-SAVE-04). */
@@ -79,6 +84,7 @@ export function createGameStore({ storage, now, newSeed }: GameStoreDeps) {
     return {
       game: null,
       setup: null,
+      lastSetup: null,
       events: [],
       selectedThrowId: null,
       selectedPawnId: null,
@@ -86,8 +92,9 @@ export function createGameStore({ storage, now, newSeed }: GameStoreDeps) {
       saveProblem: null,
 
       async loadSaved() {
-        const result = await loadGame(storage);
+        const [result, lastSetup] = await Promise.all([loadGame(storage), loadSetup(storage)]);
         set({
+          lastSetup,
           saved: result.status === 'ok' ? result.state : null,
           saveProblem: result.status === 'discarded' ? result.reason : null,
         });
@@ -96,8 +103,9 @@ export function createGameStore({ storage, now, newSeed }: GameStoreDeps) {
 
       startGame(setup, seed) {
         const game = createGame(setup.seats, setup.config, seed ?? newSeed(), `game-${now()}`, now());
-        set({ game, setup, events: [], selectedThrowId: null, selectedPawnId: null, saved: game });
+        set({ game, setup, lastSetup: setup, events: [], selectedThrowId: null, selectedPawnId: null, saved: game });
         void saveGame(storage, game);
+        void saveSetup(storage, setup);
       },
 
       resume() {

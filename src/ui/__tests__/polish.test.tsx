@@ -123,6 +123,30 @@ describe('inner ring default and throw call-outs (Settings)', () => {
   });
 });
 
+describe('Home starts the game directly', () => {
+  beforeEach(() => jest.clearAllMocks());
+
+  it('Play starts a game at once with the remembered players', async () => {
+    const seats = seatsOf(['human', 'empty', 'human', 'empty']).map((s, i) => (i === 2 ? { ...s, name: 'Nani' } : s));
+    gameStore.setState({ saved: null, game: null, lastSetup: { seats, config: CLASSIC } });
+    await render(<HomeScreen />);
+    expect(screen.getByText('Nani')).toBeTruthy();
+    await fireEvent.press(screen.getByRole('button', { name: 'Play' }));
+    expect(gameStore.getState().game?.seats[2]?.name).toBe('Nani');
+    expect(mockRouter.push).toHaveBeenCalledWith('/game');
+  });
+
+  it('with an unfinished game, the big button continues it', async () => {
+    gameStore.getState().startGame({ seats: seatsOf(['human', 'empty', 'bot', 'empty']), config: CLASSIC });
+    const saved = gameStore.getState().game;
+    gameStore.setState({ game: null });
+    await render(<HomeScreen />);
+    await fireEvent.press(screen.getByRole('button', { name: 'Continue game' }));
+    expect(gameStore.getState().game).toEqual(saved);
+    expect(screen.getByRole('button', { name: 'New game' })).toBeTruthy();
+  });
+});
+
 describe('app name in one place (TASK-59, R-I18N-03)', () => {
   it('app.config and the Home title read the same value', async () => {
     expect(appConfig.name).toBe(appJson.name);

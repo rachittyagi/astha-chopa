@@ -1,9 +1,16 @@
 // One saved game slot plus separate settings (R-SAVE-01..04).
-import { isValidConfig, SCHEMA_VERSION, SEAT_IDS, type GameState } from '@/engine';
+import { isValidConfig, SCHEMA_VERSION, SEAT_IDS, validateSeats, type GameState, type RuleConfig, type SeatConfig } from '@/engine';
 
 import type { KeyValueStore } from './storage';
 
 export const GAME_KEY = 'game.v1';
+/** The players and rules last used, so Play can start straight away. */
+export const SETUP_KEY = 'setup.v1';
+
+export interface GameSetup {
+  seats: SeatConfig[];
+  config: RuleConfig;
+}
 
 export type LoadResult =
   | { status: 'none' }
@@ -69,4 +76,33 @@ export async function loadGame(store: KeyValueStore): Promise<LoadResult> {
 
 export async function clearGame(store: KeyValueStore): Promise<void> {
   await store.removeItem(GAME_KEY);
+}
+
+/** A saved setup, or null if it is missing or no longer valid. */
+export function parseSetup(json: string | null): GameSetup | null {
+  if (!json) return null;
+  try {
+    const value = JSON.parse(json) as Partial<GameSetup> | null;
+    if (!value || !Array.isArray(value.seats) || !value.config) return null;
+    const seats = value.seats.filter(
+      (s): s is SeatConfig =>
+        !!s && typeof s.name === 'string' && typeof s.color === 'string' && ['human', 'bot', 'empty'].includes(s.kind),
+    );
+    if (validateSeats(seats).length > 0 || !isValidConfig(value.config)) return null;
+    return { seats, config: value.config };
+  } catch {
+    return null;
+  }
+}
+
+export async function saveSetup(store: KeyValueStore, setup: GameSetup): Promise<void> {
+  await store.setItem(SETUP_KEY, JSON.stringify(setup));
+}
+
+export async function loadSetup(store: KeyValueStore): Promise<GameSetup | null> {
+  try {
+    return parseSetup(await store.getItem(SETUP_KEY));
+  } catch {
+    return null;
+  }
 }
