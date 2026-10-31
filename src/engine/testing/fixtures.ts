@@ -1,5 +1,6 @@
 // Builders for engine tests. Not part of the public API.
 import { CLASSIC, type RuleConfig } from '../config';
+import { reconcileDoubles } from '../doubles';
 import { applyAction } from '../reducer';
 import { createGame } from '../setup';
 import { drawThrow } from '../throws';
@@ -47,6 +48,20 @@ export function place(state: GameState, positions: Record<string, number | null>
         ? { ...p, pathIndex: positions[p.id] ?? null, progress: positions[p.id] ?? 0 }
         : { ...p },
     ),
+  };
+}
+
+/** Record the doubles currently on the board as if they formed on `formedAtTurn`. */
+export function withDoubles(state: GameState, formedAtTurn = state.turnNumber): GameState {
+  const draft: GameState = { ...state, turnNumber: formedAtTurn, doubles: [] };
+  reconcileDoubles(draft, []);
+  return { ...state, doubles: draft.doubles };
+}
+
+export function withPrevTurnStart(state: GameState, seat: SeatId, turn: number): GameState {
+  return {
+    ...state,
+    seats: state.seats.map((s) => (s.id === seat ? { ...s, prevTurnStart: turn } : { ...s })),
   };
 }
 

@@ -82,46 +82,46 @@ Companion to [requirements.md](requirements.md) and [design.md](design.md). Tick
 
 ## M2 House rules and bot
 
-- [ ] TASK-25: `engine/doubles.ts` reconcileDoubles with formedAtTurn, DoubleFormed/DoubleBroken
+- [x] TASK-25: `engine/doubles.ts` reconcileDoubles with formedAtTurn, DoubleFormed/DoubleBroken
   Links: DES-7 | REQ-7
   Outcome: tests: double forms, third pawn joining creates a new record, breaking ends it.
-- [ ] TASK-26: Doubles in legalMoves: move-together (`together`), double hits single, double may not land on double
+- [x] TASK-26: Doubles in legalMoves: move-together (`together`), double hits single, double may not land on double
   Links: DES-7, DES-5 | REQ-7
   Outcome: scenario tests for each.
-- [ ] TASK-27: blockOnce passing rule via prevTurnStart vs formedAtTurn; `free` option; inner-ring doubles never block passing
+- [x] TASK-27: blockOnce passing rule via prevTurnStart vs formedAtTurn; `free` option; inner-ring doubles never block passing
   Links: DES-7 | REQ-7, REQ-9
   Outcome: test: opponent blocked on its first turn after formation, passes on the next; inner-ring double passable not landable.
-- [ ] TASK-28: doubles off: shared squares, no move-together, multi-pawn hit for one bonus
+- [x] TASK-28: doubles off: shared squares, no move-together, multi-pawn hit for one bonus
   Links: DES-6, DES-7 | REQ-6, REQ-9
   Outcome: scenario test passes.
-- [ ] TASK-29: bonusOnHome, triplePenalty off, entryRule onStart, noHitBehavior circle option tests (one per option value)
+- [x] TASK-29: bonusOnHome, triplePenalty off, entryRule onStart, noHitBehavior circle option tests (one per option value)
   Links: DES-4 | REQ-9
   Outcome: every RuleConfig value has at least one test asserting its behaviour (AC-10 at engine level).
-- [ ] TASK-30: `engine/invariants.ts` checkInvariants
+- [x] TASK-30: `engine/invariants.ts` checkInvariants
   Links: DES-10 | REQ-21
   Outcome: unit tests where corrupted states are caught.
-- [ ] TASK-31: Replay test: seed + action log reproduces identical final state
+- [x] TASK-31: Replay test: seed + action log reproduces identical final state
   Links: DES-2, DES-21 | REQ-12
   Outcome: R-TEST-06 passes for 100 random seeds.
-- [ ] TASK-32: `bot/weights.ts` and `bot/danger.ts` (inReach, single-throw hit probability with odds, hit flag, safe squares, doubles)
+- [x] TASK-32: `bot/weights.ts` and `bot/danger.ts` (inReach, single-throw hit probability with odds, hit flag, safe squares, doubles)
   Links: DES-11 | REQ-10
   Outcome: unit tests on hand-built boards.
-- [ ] TASK-33: Easy bot (random legal move, takes a hit with 50% chance via botRng)
+- [x] TASK-33: Easy bot (random legal move, takes a hit with 50% chance via botRng)
   Links: DES-11 | REQ-10
   Outcome: over 10,000 decisions with a hit available, hit rate is 50% ± 2 pp.
-- [ ] TASK-34: Medium bot heuristic and tie-breaks
+- [x] TASK-34: Medium bot heuristic and tie-breaks
   Links: DES-11 | REQ-10
   Outcome: tests per heuristic term and both tie-break rules.
 - [ ] TASK-35: Hard bot lookahead and pool-order search (pools ≤ 4)
   Links: DES-11 | REQ-10
-  Outcome: Hard beats Medium in > 55% of 2,000 seeded 2-player games (sanity, not a hard gate).
-- [ ] TASK-36: `bot/index.ts` chooseAction with botRngState threading; determinism test; benchmark ≤ 20 ms per decision in Node
+  Outcome: Hard beats Medium in > 55% of 2,000 seeded 2-player games (sanity, not a hard gate). (Open: Hard wins 50.9% head-to-head on 2,000 games; with a next-turn threat term 53.1% on 1,000. Needs tuning.)
+- [x] TASK-36: `bot/index.ts` chooseAction with botRngState threading; determinism test; benchmark ≤ 20 ms per decision in Node
   Links: DES-11 | REQ-10, REQ-12
   Outcome: same state gives same action; benchmark test passes.
-- [ ] TASK-37: `scripts/simulate.ts` and `npm run sim` (players 2/3/4 × Classic, plus random configs, mixed levels, invariants, 2,000-turn cap, stats)
+- [x] TASK-37: `scripts/simulate.ts` and `npm run sim` (players 2/3/4 × Classic, plus random configs, mixed levels, invariants, 2,000-turn cap, stats)
   Links: DES-10 | REQ-21, REQ-4
   Outcome: 10,000 games per configuration pass; stats report average turns and stalemate count (AC-13).
-- [ ] TASK-38: Coverage gate at 90% for engine and bot; per-rule test checklist (grep R-ids in test titles against PRD list)
+- [x] TASK-38: Coverage gate at 90% for engine and bot; per-rule test checklist (grep R-ids in test titles against PRD list)
   Links: DES-21 | REQ-21
   Outcome: `npm run test:coverage` passes; checklist script reports every R-id in sections 3–4 covered.
 

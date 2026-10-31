@@ -13,7 +13,8 @@
     "test:coverage": "jest --coverage",
     "audit:deps": "tsx scripts/audit-deps.ts",
     "sim": "tsx scripts/simulate.ts",
-    "e2e": "maestro test .maestro"
+    "e2e": "maestro test .maestro",
+    "rules:coverage": "tsx scripts/rule-coverage.ts"
   },
   "dependencies": {
     "@types/jest": "30.0.0",

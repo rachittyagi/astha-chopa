@@ -76,7 +76,7 @@ describe('legal moves (R-MOVE-01..05)', () => {
 
   it('lists equivalent moves once: same value, same square', () => {
     const state = withPool(place(game(), { A0: 3, A1: 3 }), [2, 2]);
-    expect(describeMoves(legalMoves(state))).toEqual(['A0 2:3→5']);
+    expect(describeMoves(legalMoves(state))).toEqual(['A0 2:3→5', 'A0+A1 2:3→5']);
     expect(legalMoves(state)[0]?.action.throwId).toBe(1);
   });
 

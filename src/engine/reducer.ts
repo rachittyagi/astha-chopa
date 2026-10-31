@@ -1,4 +1,5 @@
 import { HOME_INDEX } from './board';
+import { reconcileDoubles } from './doubles';
 import { resolveMove } from './legal';
 import { pawnsOf, seatOf } from './occupancy';
 import { drawThrow, isExtraThrow } from './throws';
@@ -82,6 +83,7 @@ function applyMove(draft: GameState, move: Move, events: GameEvent[]): void {
     }
     draft.pendingBonusThrows += 1; // One bonus sequence per hitting move (R-TURN-03).
   }
+  reconcileDoubles(draft, events);
 
   if (move.to === HOME_INDEX) {
     for (const id of move.pawnIds) events.push({ type: 'PawnHome', pawnId: id });

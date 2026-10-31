@@ -187,7 +187,7 @@ Covers: REQ-21, REQ-4
 `bot/index.ts` `chooseAction(state)`: throwing phase → Throw; moving phase → pick from `legalMoves` by level, return the action and the advanced `botRngState` (the store writes it back via a pure `withBotRng` helper so the throw RNG is untouched).
 - Easy: if a hitting move exists, take it when `botRng < 0.5`; else uniform random legal move.
 - Medium: score = weights from `weights.ts` per the PRD heuristic table; `danger.ts` computes, for the landing square, the chance an opponent can hit next turn by a single throw (odds from R-THROW-03, respecting their hit flag, safe squares and doubles).
-- Hard: Medium score minus expected loss from the lookahead over every opponent's next throw; for pools of ≤ 4 throws it also searches throw orders and plays the first step of the best sequence.
+- Hard: Medium score minus expected loss from the lookahead over every opponent's next throw; for pools of 2–3 throws it also searches throw orders (keeping the best 3 moves per step) and plays the first step of the best sequence. Constants in `src/bot/weights.ts`. Measured in Node: Medium ≈ 0.07 ms and Hard ≈ 0.11 ms per decision on average, worst under 10 ms.
 - Tie-break: furthest pawn, then lowest pawn id.
 - Performance: budget-checked with a micro-benchmark in tests (≤ 20 ms in Node as a proxy for the 200 ms device target); the store runs it after `InteractionManager.runAfterInteractions` so animation frames are not blocked.
 Covers: REQ-10, REQ-12
@@ -256,7 +256,7 @@ Engine work (M1–M2) needs no Expo, so it can start before M0's app scaffold is
 - **Long early game.** With needChammaOrAshta + block, players wait ~8 turns for a first entry and may lose throws often. Simulation stats will show average length; UI auto-discards so dead turns cost one animation, not a tap.
 - **MMKV needs a dev build** and runs synchronously on the JS thread; capped log keeps it small. If saves exceed 50 ms, move to snapshot-diffs.
 - **Expo SDK iOS floor** may exceed iOS 15 (OQ-4).
-- **Bot timing on low-end Android.** Hard's order search is capped at pools of ≤ 4 throws; larger pools fall back to greedy.
+- **Bot timing on low-end Android.** Hard's order search is capped at pools of 2–3 throws with a beam of 3; larger pools fall back to greedy. Node timings are far under budget; confirm on device in M5.
 - **Font coverage.** Chalk-style display fonts likely lack Devanagari; fallback font keeps Hindi readable but less themed.
 - **Tablet per-seat layout** is a "should"; it is scheduled last in M4 and can slip to v1.1 without breaking any AC.
 

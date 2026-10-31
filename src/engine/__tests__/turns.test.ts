@@ -130,8 +130,8 @@ describe('errors (PRD 8.2)', () => {
     ]);
   });
 
-  it('rejects moving an opponent\'s pawn and moving a double together (not yet supported)', () => {
-    const state = withPool(place(game(), { A0: 1, A1: 1, C0: 3 }), [1]);
+  it('rejects moving an opponent\'s pawn, or moving together a pawn that is not in a double', () => {
+    const state = withPool(place(game(), { A0: 1, A1: 5, C0: 3 }), [1]);
     expect(applyAction(state, { type: 'Move', seat: 'A', throwId: 1, pawnId: 'C0', together: false }).ok).toBe(false);
     expect(applyAction(state, { type: 'Move', seat: 'A', throwId: 1, pawnId: 'A0', together: true }).ok).toBe(false);
   });

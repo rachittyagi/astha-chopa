@@ -18,7 +18,7 @@ describe('stalemate (R-TURN-06)', () => {
     expect(result.state.stalemateBroken).toBe(true);
 
     const cTurn = throwOnce(rigged(result.state, [1]));
-    expect(describeMoves(legalMoves(cTurn))).toEqual(['C0 1:15→0']);
+    expect(describeMoves(legalMoves(cTurn))).toEqual(['C0 1:15→0', 'C0+C1 1:15→0']);
   });
 
   it('is not declared while a waiting pawn can still enter', () => {
