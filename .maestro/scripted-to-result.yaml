@@ -1,0 +1,14 @@
+# R-TEST-08: finish a scripted game on the Result screen.
+# Scenario "finish": Player 1 has three pawns home and one two squares away; seed 2 throws a 2.
+appId: com.asthachopa.app
+---
+- launchApp:
+    clearState: true
+- openLink: astha://debug/new?seed=2&scenario=finish
+- tapOn: "Throw"
+- tapOn: "Red pawn 4, square 23, inner ring"
+- assertVisible: "Results"
+- assertVisible: "Player 1"
+- tapOn: "Home"
+- assertVisible: "Play"
+- assertNotVisible: "Resume"

@@ -202,24 +202,24 @@ Companion to [requirements.md](requirements.md) and [design.md](design.md). Tick
 
 ## M5 Release
 
-- [ ] TASK-62: Release config: no expo-updates, INTERNET blocked for release, iOS privacy manifest, permissions audit of built manifests
+- [x] TASK-62: Release config: no expo-updates, INTERNET blocked for release, iOS privacy manifest, permissions audit of built manifests
   Links: DES-19 | REQ-14
-  Outcome: release APK manifest has no INTERNET; IPA has the privacy manifest.
+  Outcome: release APK manifest has no INTERNET; IPA has the privacy manifest. (Verified 2026-10-31 with `APP_VARIANT=release expo prebuild`: INTERNET, SYSTEM_ALERT_WINDOW, storage and RECORD_AUDIO marked removed; PrivacyInfo.xcprivacy and ITSAppUsesNonExemptEncryption=false generated. Preview builds block the same; development keeps INTERNET for Metro.)
 - [ ] TASK-63: Maestro flows: new 2-player game + one turn, background and resume, scripted seed game to Result
   Links: DES-21 | REQ-21, REQ-13, REQ-16
-  Outcome: `npm run e2e` passes on Android emulator and iOS simulator.
+  Outcome: `npm run e2e` passes on Android emulator and iOS simulator. (Flows written 2026-10-31 and their seeds checked by src/ui/__tests__/e2e-seeds.test.ts; not yet run: needs Maestro and a simulator or emulator.)
 - [ ] TASK-64: Performance pass: cold start < 2 s, 60 fps animations, save < 50 ms, bot < 200 ms on a mid-range 2022 Android, install < 40 MB
   Links: DES-11, DES-13, DES-20 | REQ-20, REQ-10, REQ-13, REQ-17
-  Outcome: measurements recorded in `docs/perf.md`.
-- [ ] TASK-65: Confirm Expo SDK iOS floor and record it (OQ-4)
+  Outcome: measurements recorded in `docs/perf.md`. (Node and bundle measurements recorded 2026-10-31; device rows still to measure, steps in docs/perf.md.)
+- [x] TASK-65: Confirm Expo SDK iOS floor and record it (OQ-4)
   Links: DES-20 | REQ-20
-  Outcome: decision recorded in state.md; app.config deploymentTarget set.
+  Outcome: decision recorded in state.md; app.config deploymentTarget set. (iOS 16.4 from Expo SDK 58; Android API 24.)
 - [ ] TASK-66: `docs/manual-test.md` checklist and pass on a small Android phone, an iPhone and a tablet in airplane mode, with a network inspector run
   Links: DES-21 | REQ-21, REQ-14
-  Outcome: checklist completed for AC-01..AC-17; zero requests observed (AC-12).
+  Outcome: checklist completed for AC-01..AC-17; zero requests observed (AC-12). (Checklist written 2026-10-31 in docs/manual-test.md; the device pass itself is still to do, including TASK-56's screen-reader and large-text checks.)
 - [ ] TASK-67: Store listings, "No data collected" privacy labels, beta builds (TestFlight, Play internal testing)
   Links: DES-19 | REQ-14, REQ-20
-  Outcome: beta live; crash-free sessions tracked from store consoles (no in-app reporter).
+  Outcome: beta live; crash-free sessions tracked from store consoles (no in-app reporter). (Listing, privacy-label and rating drafts in docs/store-listing.md; accounts, EAS project, screenshots, privacy-policy URL and submission are for the owner.)
 
 ## Verification
 

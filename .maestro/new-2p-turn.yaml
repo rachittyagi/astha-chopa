@@ -1,0 +1,16 @@
+# R-TEST-08: start a 2-player game and play one turn.
+# Seed 61 throws 8, then 3: enter a pawn with the 8 and move it 3 squares.
+appId: com.asthachopa.app
+---
+- launchApp:
+    clearState: true
+- openLink: astha://debug/new?seed=61
+- assertVisible: "Your turn"
+- tapOn: "Throw"
+- assertVisible: "Ashta! Throw again"
+- tapOn: "Throw again"
+- assertVisible: "Tap your waiting pawns to bring one in"
+- tapOn: "Player 1: 4 waiting"
+- tapOn: "Red pawn 1, square 1, outer ring"
+- assertVisible: "Red pawn 1, square 4, outer ring"
+- assertVisible: "Player 3"

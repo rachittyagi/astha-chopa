@@ -252,6 +252,7 @@ Verification: hard-coded-string lint; Hindi screenshot pass; rename test build (
 PRD: section 1 Platforms, section 9 NFR table.
 
 - THE SYSTEM SHALL run on Android 8.0+ and iOS 15+ (or the Expo SDK floor if higher, recorded as a decision), phones and tablets, portrait and landscape, built as an Expo development build.
+  - Decision (OQ-4, 2026-10-31): Expo SDK 58 sets the iOS deployment target to 16.4, so the floor is **iOS 16.4**. Android's minimum is API 24 (7.0), below the PRD's 8.0.
 - THE SYSTEM SHALL reach Home in under 2 s cold start, stay under 40 MB installed, and reach 99.5% crash-free sessions in beta.
 
 Verification: release-build measurements; beta report.
