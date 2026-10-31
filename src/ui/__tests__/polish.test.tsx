@@ -11,7 +11,7 @@ import en from '@/i18n/en.json';
 import hi from '@/i18n/hi.json';
 import { cuesFor } from '@/services/feedback';
 import { memoryStore } from '@/services/storage';
-import { createSettingsStore } from '@/store/settings';
+import { createSettingsStore, defaultRules } from '@/store/settings';
 import { durations, motionsFor } from '@/ui/game/motion';
 import { HomeScreen } from '@/ui/screens/HomeScreen';
 import { HowToPlayScreen } from '@/ui/screens/HowToPlayScreen';
@@ -100,6 +100,29 @@ describe('translations (TASK-58, R-I18N-01..02)', () => {
   });
 });
 
+describe('inner ring default and throw call-outs (Settings)', () => {
+  it('new games follow the inner-ring setting; call-outs are on by default', async () => {
+    expect(defaultRules({ innerRing: 'open' }).noHitBehavior).toBe('free');
+    expect(defaultRules({ innerRing: 'hit' }).noHitBehavior).toBe('block');
+    const storage = memoryStore();
+    const store = createSettingsStore(storage);
+    await store.getState().load();
+    expect(store.getState()).toMatchObject({ innerRing: 'open', callouts: true });
+    store.getState().update({ innerRing: 'hit', callouts: false });
+    const again = createSettingsStore(storage);
+    await again.getState().load();
+    expect(again.getState()).toMatchObject({ innerRing: 'hit', callouts: false });
+  });
+
+  it('How to play from Home explains the hit requirement when Settings asks for it', async () => {
+    settingsStore.setState({ innerRing: 'hit' });
+    gameStore.setState({ game: null });
+    await render(<HowToPlayScreen />);
+    expect(screen.getByText(/stop at the end of the outer ring/)).toBeTruthy();
+    settingsStore.setState({ innerRing: 'open' });
+  });
+});
+
 describe('app name in one place (TASK-59, R-I18N-03)', () => {
   it('app.config and the Home title read the same value', async () => {
     expect(appConfig.name).toBe(appJson.name);
@@ -132,8 +155,8 @@ describe('How to play (TASK-60)', () => {
   it('explains the Classic rules from Home', async () => {
     gameStore.setState({ game: null });
     await render(<HowToPlayScreen />);
-    expect(screen.getByText(/Use a 4 or 8 to bring one onto your start square/)).toBeTruthy();
-    expect(screen.getByText(/stop at the end of the outer ring/)).toBeTruthy();
+    expect(screen.getByText(/Use a 4 or 8 to bring one into play/)).toBeTruthy();
+    expect(screen.getByText(/inner ring at any time; no hit is needed/)).toBeTruthy();
     expect(screen.getByText(/Chowka Bara, Daayam and Kanna Kauri/)).toBeTruthy();
     expect(screen.getByText(/Three 4s or 8s in a row lose the whole turn/)).toBeTruthy();
     expect(screen.getByText(/play carries on after the first winner/)).toBeTruthy();

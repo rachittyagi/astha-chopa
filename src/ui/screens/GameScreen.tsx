@@ -6,12 +6,12 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { botDelay } from '@/bot';
 import { humanStillPlaying, RULE_KEYS, type GameState, type Seat, type Throw } from '@/engine';
-import { cuesFor, playCues } from '@/services/feedback';
+import { cuesFor, playCues, speak } from '@/services/feedback';
 import { gameStore, settingsStore, useGame, useSettings } from '@/store/app';
 import { Button, Title } from '@/ui/common';
 import { Board } from '@/ui/game/Board';
-import { MoveChoice, PoolChips, SeatPanels, Shells, TurnBanner, WaitingArea } from '@/ui/game/Controls';
-import { messageFor } from '@/ui/game/messages';
+import { MoveChoice, PoolChips, SeatMark, SeatPanels, Shells, TurnBanner } from '@/ui/game/Controls';
+import { messageFor, throwPhrase } from '@/ui/game/messages';
 import { durations, motionsFor, type Motion } from '@/ui/game/motion';
 import { selectionView, tapPawn, tapThrow, tapWaiting, type SelectionView, type TapOutcome } from '@/ui/game/selection';
 import { useThemedStyles, type Theme } from '@/ui/theme';
@@ -61,6 +61,10 @@ function useEventFeedback() {
         const settings = settingsStore.getState();
         const wait = thrown ? durations(settings.speed === 'fast' || !humanStillPlaying(game)).shellsMs : 0;
         const show = () => {
+          // Call out the result once the shells settle ("It's 3", "Chamma!").
+          if (thrown?.type === 'ThrowResolved' && settings.callouts) {
+            speak(throwPhrase(thrown.throw.value, t), settings.language);
+          }
           if (shown.length > 0) setCallout(shown[shown.length - 1]!);
           if (spoken.length > 0) AccessibilityInfo.announceForAccessibility(spoken.join('. '));
         };
@@ -110,7 +114,6 @@ const makeStyles = (c: Theme) => ({
     borderRadius: 12,
   },
   calloutText: { color: c.onOverlay, fontSize: 20, fontWeight: '700' as const, textAlign: 'center' as const },
-  waitingRow: { flexDirection: 'row' as const, flexWrap: 'wrap' as const, gap: 8 },
   hint: { color: c.muted, fontSize: 15 },
   overlay: { flex: 1, backgroundColor: c.overlay, justifyContent: 'center' as const, padding: 24 },
   sheet: {
@@ -249,6 +252,7 @@ export function GameScreen() {
         size={boardSize}
         view={human ? view : { ...view, movablePawnIds: [], preview: null }}
         onPawnPress={(id) => handle(tapPawn(game, selectedThrowId, id))}
+        onWaitingPress={() => handle(tapWaiting(game, selectedThrowId))}
         motions={motions}
         stepMs={timing.stepMs}
         knockbackMs={timing.knockbackMs}
@@ -277,7 +281,6 @@ export function GameScreen() {
     <Button label={t('game.endNow')} onPress={() => store.endNow()} variant="secondary" />
   );
   const pauseButton = <Button label={t('game.pause')} onPress={() => setPaused(true)} variant="secondary" />;
-  const enter = () => handle(tapWaiting(game, selectedThrowId));
 
   /** A seat's side panel on tablets, turned to face that player. */
   const side = (id: Seat['id'], rotate: string, w: number, h: number) => {
@@ -301,8 +304,8 @@ export function GameScreen() {
               },
             ]}
           >
+            <SeatMark seat={s.id} color={s.color} />
             <Text style={styles.sideName}>{s.name}</Text>
-            <WaitingArea state={game} seat={s} canEnter={human && view.canEnter} onPress={enter} />
             {current && controls}
           </View>
         )}
@@ -404,13 +407,6 @@ export function GameScreen() {
         </View>
         <SeatPanels state={game} />
         {board}
-        <View style={styles.waitingRow}>
-          {game.seats
-            .filter((s) => s.kind !== 'empty')
-            .map((s) => (
-              <WaitingArea key={s.id} state={game} seat={s} canEnter={human && view.canEnter} onPress={enter} />
-            ))}
-        </View>
         {controls}
         {endNow}
       </View>

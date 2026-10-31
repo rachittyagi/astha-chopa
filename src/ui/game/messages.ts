@@ -1,13 +1,20 @@
 // Turns engine events into on-screen callouts and screen-reader announcements (R-UI-06, R-A11Y-02).
 import type { TFunction } from 'i18next';
 
-import type { GameEvent, GameState } from '@/engine';
+import type { GameEvent, GameState, ThrowValue } from '@/engine';
 
 export interface EventMessage {
   /** Shown as a callout on the game screen. */
   callout?: string;
   /** Read out by the screen reader. */
   announce?: string;
+}
+
+/** What the voice says after a throw: "It's 3", "Chamma!" or "Ashta!". */
+export function throwPhrase(value: ThrowValue, t: TFunction): string {
+  if (value === 4) return t('game.speech.chamma');
+  if (value === 8) return t('game.speech.ashta');
+  return t('game.speech.value', { value });
 }
 
 export function messageFor(event: GameEvent, state: GameState, t: TFunction): EventMessage {

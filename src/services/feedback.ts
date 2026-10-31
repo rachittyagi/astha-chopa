@@ -82,4 +82,14 @@ export function playCues(cues: Cues, settings: { sound: boolean; haptics: boolea
     }
   }
 }
+/** Speak a short phrase with the device's own text-to-speech (offline, no network). */
+export function speak(text: string, language: 'en' | 'hi'): void {
+  try {
+    const Speech = require('expo-speech') as typeof import('expo-speech');
+    Speech.stop();
+    Speech.speak(text, { language: language === 'hi' ? 'hi-IN' : 'en-IN', rate: 1 });
+  } catch {
+    // No speech engine: stay quiet.
+  }
+}
 /* eslint-enable @typescript-eslint/no-require-imports */

@@ -1,6 +1,8 @@
 // App preferences, stored apart from the game (R-SAVE-03).
 import { createStore } from 'zustand/vanilla';
 
+import { CLASSIC, type RuleConfig } from '@/engine';
+
 import type { KeyValueStore } from '@/services/storage';
 
 export const SETTINGS_KEY = 'settings.v1';
@@ -11,6 +13,10 @@ export interface Settings {
   haptics: boolean;
   speed: 'normal' | 'fast';
   language: 'en' | 'hi';
+  /** Speak each throw's result ("It's 3", "Chamma!"). */
+  callouts: boolean;
+  /** Default for new games: may pawns enter the inner ring before their first hit? */
+  innerRing: 'open' | 'hit';
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -19,7 +25,14 @@ export const DEFAULT_SETTINGS: Settings = {
   haptics: true,
   speed: 'normal',
   language: 'en',
+  callouts: true,
+  innerRing: 'open',
 };
+
+/** The rules a new game starts from: Classic, with the inner-ring default from Settings. */
+export function defaultRules(settings: Pick<Settings, 'innerRing'>): RuleConfig {
+  return { ...CLASSIC, noHitBehavior: settings.innerRing === 'open' ? 'free' : 'block' };
+}
 
 export interface SettingsStore extends Settings {
   loaded: boolean;
@@ -36,6 +49,8 @@ function pickSettings(value: unknown): Partial<Settings> {
   if (typeof v.haptics === 'boolean') out.haptics = v.haptics;
   if (v.speed === 'normal' || v.speed === 'fast') out.speed = v.speed;
   if (v.language === 'en' || v.language === 'hi') out.language = v.language;
+  if (typeof v.callouts === 'boolean') out.callouts = v.callouts;
+  if (v.innerRing === 'open' || v.innerRing === 'hit') out.innerRing = v.innerRing;
   return out;
 }
 
@@ -55,8 +70,11 @@ export function createSettingsStore(storage: KeyValueStore, detectLanguage: () =
     },
     update(patch) {
       set(patch);
-      const { theme, sound, haptics, speed, language } = { ...get(), ...patch };
-      void storage.setItem(SETTINGS_KEY, JSON.stringify({ theme, sound, haptics, speed, language }));
+      const { theme, sound, haptics, speed, language, callouts, innerRing } = { ...get(), ...patch };
+      void storage.setItem(
+        SETTINGS_KEY,
+        JSON.stringify({ theme, sound, haptics, speed, language, callouts, innerRing }),
+      );
     },
   }));
 }

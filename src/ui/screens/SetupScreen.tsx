@@ -4,7 +4,6 @@ import { useTranslation } from 'react-i18next';
 import { Alert, Pressable, Text, TextInput, View } from 'react-native';
 
 import {
-  CLASSIC,
   RULE_KEYS,
   RULE_OPTIONS,
   SEAT_IDS,
@@ -15,7 +14,8 @@ import {
   type SeatKind,
 } from '@/engine';
 import { BOT_LEVELS } from '@/bot';
-import { gameStore, useGame } from '@/store/app';
+import { gameStore, useGame, useSettings } from '@/store/app';
+import { defaultRules } from '@/store/settings';
 import { Button, Screen, Segmented, Title } from '@/ui/common';
 import { nextColor, PLAYER_COUNTS, presetSeats, setKind, type PlayerCount } from '@/ui/setup/presets';
 import { MIN_TOUCH, PAWN_COLORS, useThemedStyles, type Theme } from '@/ui/theme';
@@ -50,7 +50,8 @@ export function SetupScreen() {
   const [count, setCount] = useState<PlayerCount>(2);
   const [seats, setSeats] = useState<SeatConfig[]>(() => presetSeats(2));
   const [mode, setMode] = useState<'classic' | 'custom'>('classic');
-  const [custom, setCustom] = useState<RuleConfig>({ ...CLASSIC });
+  const innerRing = useSettings((s) => s.innerRing);
+  const [custom, setCustom] = useState<RuleConfig>(() => defaultRules({ innerRing }));
 
   const problems = validateSeats(seats);
   const update = (index: number, patch: Partial<SeatConfig>) =>
@@ -58,7 +59,7 @@ export function SetupScreen() {
 
   const start = () => {
     const begin = () => {
-      gameStore.getState().startGame({ seats, config: mode === 'classic' ? CLASSIC : custom });
+      gameStore.getState().startGame({ seats, config: mode === 'classic' ? defaultRules({ innerRing }) : custom });
       router.replace('/game');
     };
     if (!saved) return begin();

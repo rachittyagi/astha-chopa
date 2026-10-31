@@ -9,7 +9,7 @@ appId: com.asthachopa.app
 - tapOn: "Throw"
 - assertVisible: "Ashta! Throw again"
 - tapOn: "Throw again"
-- assertVisible: "Tap your waiting pawns to bring one in"
+- assertVisible: "Tap your waiting pawns on the start square to bring one in"
 - tapOn: "Player 1: 4 waiting"
 - tapOn: "Red pawn 1, square 1, outer ring"
 - assertVisible: "Red pawn 1, square 4, outer ring"

@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Animated, Easing, Platform, Pressable, Text, View } from 'react-native';
 
-import { isSafe, ringOf, squareOf, type GameState, type Pawn, type SeatId, type Square } from '@/engine';
+import { isSafe, pathFor, ringOf, squareOf, type GameState, type Pawn, type SeatId, type Square } from '@/engine';
 import { textOn } from '@/ui/contrast';
 import { PAWN_COLORS, SEAT_SHAPES, useThemedStyles, type Theme } from '@/ui/theme';
 
@@ -14,6 +14,8 @@ interface Props {
   size: number;
   view: SelectionView;
   onPawnPress(pawnId: string): void;
+  /** Tap on the current player's waiting pawns (drawn on their start square) to enter one. */
+  onWaitingPress?(): void;
   /** Queued animations; the first plays now, the rest wait at their starting squares. */
   motions?: Motion[];
   stepMs?: number;
@@ -32,6 +34,8 @@ interface Token {
   pawns: Pawn[];
   square: Square;
   motion?: Motion;
+  /** Pawns not yet in play, shown on their start square (needChammaOrAshta). */
+  waiting?: boolean;
 }
 
 /** Tokens to draw: pawns grouped by square and seat, with animating pawns drawn on their own. */
@@ -50,10 +54,10 @@ function tokensFor(state: GameState, motions: Motion[]): Token[] {
       else loose.push({ key, seat: pawn.seat, pawns: [pawn], square: motion.from, motion });
       continue;
     }
-    const square = squareOf(pawn);
-    if (!square) continue;
-    const key = `${pawn.seat}${keyOf(square)}`;
-    const group = groups.get(key) ?? { key, seat: pawn.seat, pawns: [], square };
+    const waiting = pawn.pathIndex === null;
+    const square = waiting ? pathFor(pawn.seat)[0]! : squareOf(pawn)!;
+    const key = waiting ? `w${pawn.seat}` : `${pawn.seat}${keyOf(square)}`;
+    const group = groups.get(key) ?? { key, seat: pawn.seat, pawns: [], square, waiting };
     group.pawns.push(pawn);
     groups.set(key, group);
   }
@@ -80,10 +84,11 @@ const makeStyles = (c: Theme) => ({
     borderColor: '#ffffffcc',
   },
   movable: { borderColor: c.highlight, borderWidth: 4 },
+  waiting: { opacity: 0.55, borderStyle: 'dashed' as const, borderColor: c.boardLine },
   label: { fontWeight: '700' as const, fontSize: 13 },
 });
 
-export function Board({ state, size, view, onPawnPress, motions = [], stepMs = 140, knockbackMs = 320, onMotionDone }: Props) {
+export function Board({ state, size, view, onPawnPress, onWaitingPress, motions = [], stepMs = 140, knockbackMs = 320, onMotionDone }: Props) {
   const { t } = useTranslation();
   const { styles } = useThemedStyles(makeStyles);
   const cell = (size - 2 * BORDER) / 5;
@@ -175,7 +180,10 @@ export function Board({ state, size, view, onPawnPress, motions = [], stepMs = 1
             ]
           : [];
 
-        const target = tok.motion ? undefined : tok.pawns.find((p) => movable.has(p.id));
+        const canEnter = !!tok.waiting && view.canEnter && tok.seat === state.currentSeat;
+        const target = tok.motion || tok.waiting ? undefined : tok.pawns.find((p) => movable.has(p.id));
+        const tappable = !!target || canEnter;
+        const seatName = state.seats.find((s) => s.id === tok.seat)!.name;
         const color = PAWN_COLORS[colorOf(tok.seat)]!;
         const { shape, symbol } = SEAT_SHAPES[tok.seat];
         const radius =
@@ -189,11 +197,15 @@ export function Board({ state, size, view, onPawnPress, motions = [], stepMs = 1
             style={{ position: 'absolute', left, top, width: tokenSize, height: tokenSize, transform: translate }}
           >
             <Pressable
-              disabled={!target}
-              onPress={() => target && onPawnPress(target.id)}
+              disabled={!tappable}
+              onPress={() => (canEnter ? onWaitingPress?.() : target && onPawnPress(target.id))}
               accessibilityRole="button"
-              accessibilityLabel={pawnLabel(tok.pawns[0]!)}
-              accessibilityState={{ disabled: !target }}
+              accessibilityLabel={
+                tok.waiting
+                  ? t('game.a11y.waitingArea', { name: seatName, count: tok.pawns.length })
+                  : pawnLabel(tok.pawns[0]!)
+              }
+              accessibilityState={{ disabled: !tappable }}
               hitSlop={Math.max(0, (44 - tokenSize) / 2)}
               style={{ width: tokenSize, height: tokenSize, alignItems: 'center', justifyContent: 'center' }}
             >
@@ -207,7 +219,8 @@ export function Board({ state, size, view, onPawnPress, motions = [], stepMs = 1
                     backgroundColor: color,
                     transform: turn,
                   },
-                  target && styles.movable,
+                  tok.waiting && styles.waiting,
+                  tappable && styles.movable,
                 ]}
               />
               <Text style={[styles.label, { color: textOn(color) }]}>

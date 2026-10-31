@@ -5,9 +5,11 @@ import { Text, useWindowDimensions, View } from 'react-native';
 
 import { APP_NAME } from '@/config/app';
 import { CLASSIC, createGame, THROW_ODDS, THROW_VALUES, type RuleConfig, type ThrowValue } from '@/engine';
-import { useGame } from '@/store/app';
+import { useGame, useSettings } from '@/store/app';
+import { defaultRules } from '@/store/settings';
 import { Body, Button, Screen, Title } from '@/ui/common';
 import { Board } from '@/ui/game/Board';
+import { Cowrie } from '@/ui/game/Cowrie';
 import { SeatMark } from '@/ui/game/Controls';
 import { presetSeats } from '@/ui/setup/presets';
 import { useThemedStyles, type Theme } from '@/ui/theme';
@@ -17,9 +19,6 @@ const makeStyles = (c: Theme) => ({
   heading: { fontSize: 20, fontWeight: '700' as const, color: c.text },
   note: { color: c.accent, fontWeight: '600' as const },
   throwRow: { flexDirection: 'row' as const, alignItems: 'center' as const, gap: 6 },
-  shell: { width: 18, height: 26, borderRadius: 9, borderWidth: 2, borderColor: c.boardLine },
-  up: { backgroundColor: '#fffaf0' },
-  down: { backgroundColor: '#cdb995' },
   throwText: { color: c.text, fontSize: 15, marginLeft: 8, flexShrink: 1 },
   seats: { flexDirection: 'row' as const, gap: 12, flexWrap: 'wrap' as const },
   seat: { flexDirection: 'row' as const, alignItems: 'center' as const, gap: 6 },
@@ -36,7 +35,8 @@ export function HowToPlayScreen() {
   const { width } = useWindowDimensions();
   const { styles } = useThemedStyles(makeStyles);
   const game = useGame((s) => s.game);
-  const rules: RuleConfig = game?.ruleConfig ?? CLASSIC;
+  const innerRing = useSettings((s) => s.innerRing);
+  const rules: RuleConfig = game?.ruleConfig ?? defaultRules({ innerRing });
   const demo = useMemo(
     () => createGame(presetSeats(4), { ...CLASSIC, entryRule: 'onStart' }, 1, 'demo', 0),
     [],
@@ -84,7 +84,7 @@ export function HowToPlayScreen() {
             })}
           >
             {[0, 1, 2, 3].map((i) => (
-              <View key={i} style={[styles.shell, i < upCount(value) ? styles.up : styles.down]} />
+              <Cowrie key={i} up={i < upCount(value)} size={30} />
             ))}
             <Text style={styles.throwText}>
               {t('howToPlay.throws.row', { value, up: upCount(value), percent: Math.round(THROW_ODDS[value] * 100) })}

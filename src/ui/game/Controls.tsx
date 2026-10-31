@@ -6,34 +6,11 @@ import { Animated, Modal, Platform, Pressable, Text, View } from 'react-native';
 import type { GameState, Seat, SeatId, Throw } from '@/engine';
 import { Button } from '@/ui/common';
 import { textOn } from '@/ui/contrast';
+import { Cowrie } from '@/ui/game/Cowrie';
 import { MIN_TOUCH, PAWN_COLORS, SEAT_SHAPES, useThemedStyles, type Theme } from '@/ui/theme';
 
 const makeStyles = (c: Theme) => ({
-  waiting: {
-    minHeight: MIN_TOUCH,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 10,
-    borderWidth: 2,
-    borderColor: 'transparent',
-    backgroundColor: c.surface,
-  },
-  waitingActive: { borderColor: c.highlight },
-  waitingLabel: { fontSize: 12, color: c.muted },
-  row: { flexDirection: 'row' as const, gap: 4, marginTop: 2, alignItems: 'center' as const },
-  shells: { flexDirection: 'row' as const, alignItems: 'center' as const, gap: 8, minHeight: 44 },
-  shell: {
-    width: 26,
-    height: 36,
-    borderRadius: 13,
-    borderWidth: 2,
-    borderColor: c.boardLine,
-    alignItems: 'center' as const,
-    justifyContent: 'center' as const,
-  },
-  shellUp: { backgroundColor: '#fffaf0' },
-  shellDown: { backgroundColor: '#cdb995' },
-  slit: { width: 3, height: 24, borderRadius: 2, backgroundColor: '#5b3a1a' },
+  shells: { flexDirection: 'row' as const, alignItems: 'center' as const, gap: 8, minHeight: 52 },
   value: { fontSize: 28, fontWeight: '700' as const, color: c.text, marginLeft: 8, minWidth: 24 },
   chips: { flexDirection: 'row' as const, flexWrap: 'wrap' as const, gap: 8, minHeight: MIN_TOUCH },
   chip: {
@@ -101,41 +78,6 @@ export function SeatMark({ seat, color, size = 18 }: { seat: SeatId; color: stri
   );
 }
 
-export function WaitingArea({
-  state,
-  seat,
-  canEnter,
-  onPress,
-}: {
-  state: GameState;
-  seat: Seat;
-  canEnter: boolean;
-  onPress(): void;
-}) {
-  const { t } = useTranslation();
-  const { styles } = useThemedStyles(makeStyles);
-  const waiting = state.pawns.filter((p) => p.seat === seat.id && p.pathIndex === null).length;
-  if (waiting === 0) return null;
-  const active = canEnter && seat.id === state.currentSeat;
-  return (
-    <Pressable
-      disabled={!active}
-      onPress={onPress}
-      accessibilityRole="button"
-      accessibilityLabel={t('game.a11y.waitingArea', { name: seat.name, count: waiting })}
-      accessibilityState={{ disabled: !active }}
-      style={[styles.waiting, active && styles.waitingActive]}
-    >
-      <Text style={styles.waitingLabel}>{seat.name}</Text>
-      <View style={styles.row}>
-        {Array.from({ length: waiting }, (_, i) => (
-          <SeatMark key={i} seat={seat.id} color={seat.color} />
-        ))}
-      </View>
-    </Pressable>
-  );
-}
-
 /** The four shells: they tumble for `rollMs`, then show their faces and the value (R-THROW-04, R-UI-01). */
 export function Shells({ thrown, rollMs }: { thrown: Throw | undefined; rollMs: number }) {
   return thrown ? <RollingShells key={thrown.id} thrown={thrown} rollMs={rollMs} /> : <EmptyShells />;
@@ -189,11 +131,8 @@ function RollingShells({ thrown, rollMs }: { thrown: Throw; rollMs: number }) {
       }
     >
       {faces.map((up, i) => (
-        <Animated.View
-          key={i}
-          style={[styles.shell, up ? styles.shellUp : styles.shellDown, rolling && { transform: [{ rotate }] }]}
-        >
-          {up && <View style={styles.slit} />}
+        <Animated.View key={i} style={rolling ? { transform: [{ rotate }] } : undefined}>
+          <Cowrie up={up} size={48} />
         </Animated.View>
       ))}
       <Text style={styles.value}>{rolling ? '' : thrown.value}</Text>

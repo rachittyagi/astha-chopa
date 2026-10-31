@@ -2,7 +2,7 @@
 
 export { pathFor, isSafe, ringOf, sameSquare, SAFE_SQUARES, HOME_INDEX, LAST_OUTER_INDEX } from './board';
 export type { Ring } from './board';
-export { CLASSIC, RULE_KEYS, RULE_OPTIONS, isValidConfig } from './config';
+export { CLASSIC, RULE_COMBINATIONS, RULE_KEYS, RULE_OPTIONS, configNumber, isValidConfig } from './config';
 export type { RuleConfig, RuleKey } from './config';
 export { legalMoves, movesWithValue } from './legal';
 export { isOuterSquare } from './doubles';

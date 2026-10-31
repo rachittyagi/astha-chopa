@@ -6,9 +6,8 @@ import {
   applyAction,
   checkInvariants,
   CLASSIC,
+  configNumber,
   createGame,
-  RULE_KEYS,
-  RULE_OPTIONS,
   type BotLevel,
   type RuleConfig,
   type SeatConfig,
@@ -25,15 +24,6 @@ const SEATS_BY_COUNT: Record<number, SeatKind[]> = {
 };
 
 type ConfigMode = 'classic' | 'random';
-
-/** Combination n of the 2^7 house-rule settings; seeds cycle through all 128. */
-export function configNumber(n: number): RuleConfig {
-  const config = { ...CLASSIC } as Record<string, unknown>;
-  RULE_KEYS.forEach((key, bit) => {
-    config[key] = RULE_OPTIONS[key][(n >> bit) & 1];
-  });
-  return config as unknown as RuleConfig;
-}
 
 function seatsFor(players: number, seed: number): SeatConfig[] {
   return SEATS_BY_COUNT[players]!.map((kind, i) => {
@@ -54,7 +44,7 @@ interface GameResult {
 }
 
 export function playGame(players: number, mode: ConfigMode, seed: number): GameResult {
-  const config = mode === 'classic' ? CLASSIC : configNumber(seed % 128);
+  const config = mode === 'classic' ? CLASSIC : configNumber(seed);
   let state = createGame(seatsFor(players, seed), config, seed, `sim-${seed}`, 0);
   const problems: string[] = [];
   while (state.phase !== 'finished' && state.turnNumber <= MAX_TURNS && problems.length === 0) {

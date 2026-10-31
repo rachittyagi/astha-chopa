@@ -40,7 +40,7 @@ describe('legal moves (R-MOVE-01..05)', () => {
     expect(describeMoves(legalMoves(withPool(state, [2])))).toEqual(['A0 2:22→24']);
   });
 
-  it('R-MOVE-02/03 a player without a hit stops at index 15 (block)', () => {
+  it('R-MOVE-02/03 noHitBehavior block: a player without a hit stops at index 15', () => {
     const state = place(game(), { A0: 13 });
     expect(describeMoves(legalMoves(withPool(state, [3])))).toEqual([]);
     expect(describeMoves(legalMoves(withPool(state, [2])))).toEqual(['A0 2:13→15']);
@@ -49,6 +49,14 @@ describe('legal moves (R-MOVE-01..05)', () => {
   it('R-MOVE-02 after one hit, every pawn of that player may enter the inner ring', () => {
     const state = withHit(place(game(), { A0: 13, A1: 15 }), 'A');
     expect(describeMoves(legalMoves(withPool(state, [3])))).toEqual(['A0 3:13→16', 'A1 3:15→18']);
+  });
+
+  it('noHitBehavior free (the Classic default): the inner ring is open without a hit', () => {
+    const state = withPool(place(game({ config: { noHitBehavior: 'free' } }), { A0: 13 }), [3]);
+    expect(describeMoves(legalMoves(state))).toEqual(['A0 3:13→16']);
+    const after = act(state, moveAction(state, 'A0', 1));
+    expect(after.seats[0]!.hasHit).toBe(false);
+    expect(pawn(after, 'A0').pathIndex).toBe(16);
   });
 
   it('noHitBehavior circle: a hitless pawn wraps from 15 back round the outer ring', () => {

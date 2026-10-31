@@ -10,10 +10,12 @@ import { useThemedStyles, type Theme } from '@/ui/theme';
 const THEMES: Settings['theme'][] = ['chalk', 'wood', 'flat'];
 const SPEEDS: Settings['speed'][] = ['normal', 'fast'];
 const LANGUAGES: Settings['language'][] = ['en', 'hi'];
+const INNER_RING: Settings['innerRing'][] = ['open', 'hit'];
 
 const makeStyles = (c: Theme) => ({
   label: { fontSize: 16, fontWeight: '700' as const, color: c.text, marginTop: 8 },
   group: { gap: 8 },
+  hint: { fontSize: 13, color: c.muted },
 });
 
 export function SettingsScreen() {
@@ -47,6 +49,7 @@ export function SettingsScreen() {
 
       <Toggle label={t('settings.sound')} value={settings.sound} onChange={(sound) => update({ sound })} />
       <Toggle label={t('settings.haptics')} value={settings.haptics} onChange={(haptics) => update({ haptics })} />
+      <Toggle label={t('settings.callouts')} value={settings.callouts} onChange={(callouts) => update({ callouts })} />
 
       <View style={styles.group}>
         <Text style={styles.label}>{t('settings.speed')}</Text>
@@ -68,6 +71,18 @@ export function SettingsScreen() {
           accessibilityLabel={t('settings.language')}
           onChange={(language) => update({ language })}
         />
+      </View>
+
+      <View style={styles.group}>
+        <Text style={styles.label}>{t('settings.innerRing')}</Text>
+        <Segmented
+          options={INNER_RING}
+          value={settings.innerRing}
+          labelOf={(v) => t(`settings.innerRings.${v}`)}
+          accessibilityLabel={t('settings.innerRing')}
+          onChange={(innerRing) => update({ innerRing })}
+        />
+        <Text style={styles.hint}>{t('settings.innerRingHint')}</Text>
       </View>
 
       {saved && <Button label={t('settings.reset')} variant="secondary" onPress={reset} />}

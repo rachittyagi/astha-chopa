@@ -1,4 +1,4 @@
-import { CLASSIC, isValidConfig, RULE_KEYS } from '../config';
+import { CLASSIC, configNumber, isValidConfig, RULE_COMBINATIONS, RULE_KEYS } from '../config';
 import { createGame, validateSeats } from '../setup';
 import { game, seatsOf } from '../testing/fixtures';
 
@@ -6,7 +6,7 @@ describe('rule config (R-CFG-01..02)', () => {
   it('Classic preset matches the PRD defaults', () => {
     expect(CLASSIC).toEqual({
       entryRule: 'needChammaOrAshta',
-      noHitBehavior: 'block',
+      noHitBehavior: 'free',
       triplePenalty: true,
       doubles: true,
       doubleCrossing: 'blockOnce',
@@ -14,6 +14,13 @@ describe('rule config (R-CFG-01..02)', () => {
       playToEnd: true,
     });
     expect(RULE_KEYS).toHaveLength(7);
+    expect(RULE_COMBINATIONS).toBe(192);
+  });
+
+  it('numbers every combination of options exactly once', () => {
+    const seen = new Set(Array.from({ length: RULE_COMBINATIONS }, (_, n) => JSON.stringify(configNumber(n))));
+    expect(seen.size).toBe(RULE_COMBINATIONS);
+    expect(configNumber(RULE_COMBINATIONS)).toEqual(configNumber(0));
   });
 
   it('rejects unknown option values', () => {

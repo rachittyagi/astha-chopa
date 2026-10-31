@@ -28,7 +28,8 @@ export function checkInvariants(prev: GameState, action: Action, next: GameState
     if (i === null && next.ruleConfig.entryRule === 'onStart') fail(`${pawn.id} off the board under onStart`);
     if (pawn.progress < 0) fail(`${pawn.id} has negative progress`);
     const hasHit = next.seats.find((s) => s.id === pawn.seat)!.hasHit;
-    if (!hasHit && i !== null && i > LAST_OUTER_INDEX) fail(`${pawn.id} entered the inner ring without a hit`);
+    const needsHit = next.ruleConfig.noHitBehavior !== 'free';
+    if (needsHit && !hasHit && i !== null && i > LAST_OUTER_INDEX) fail(`${pawn.id} entered the inner ring without a hit`);
     const was = prev.pawns.find((p) => p.id === pawn.id)!;
     if (was.pathIndex === HOME_INDEX && i !== HOME_INDEX) fail(`${pawn.id} left home`);
   }

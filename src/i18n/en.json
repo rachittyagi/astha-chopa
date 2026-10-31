@@ -66,7 +66,8 @@
     "noHitBehavior": {
       "label": "Before your first hit",
       "block": "Stop at the end of the outer ring",
-      "circle": "Keep circling the outer ring"
+      "circle": "Keep circling the outer ring",
+      "free": "Enter the inner ring any time"
     },
     "triplePenalty": {
       "label": "Three 4s or 8s in a row",
@@ -129,15 +130,21 @@
       "shellDown": "mouth down",
       "thrown": "{{name}} threw {{value}}",
       "turn": "{{name}}'s turn",
-      "waitingArea": "{{name}}: {{count}} waiting"
+      "waitingArea": "{{name}}: {{count}} waiting",
+      "cowrie": "cowrie shell"
     },
     "ring": {
       "outer": "outer",
       "inner": "inner",
       "home": "home"
     },
-    "pickEnter": "Tap your waiting pawns to bring one in",
-    "panelInfo": "{{home}} · {{hit}}"
+    "pickEnter": "Tap your waiting pawns on the start square to bring one in",
+    "panelInfo": "{{home}} · {{hit}}",
+    "speech": {
+      "value": "It's {{value}}",
+      "chamma": "Chamma!",
+      "ashta": "Ashta!"
+    }
   },
   "pause": {
     "title": "Paused",
@@ -177,12 +184,13 @@
       "title": "Moving",
       "entry": {
         "onStart": "All pawns begin on your start square.",
-        "needChammaOrAshta": "Pawns begin off the board. Use a 4 or 8 to bring one onto your start square."
+        "needChammaOrAshta": "Your pawns wait on your start square. Use a 4 or 8 to bring one into play."
       },
       "body": "Each throw moves one pawn (or a double) by its full value. You need the exact count to reach the centre. If no throw can be used, your turn passes.",
       "noHit": {
         "block": "Until you hit an opponent, your pawns stop at the end of the outer ring.",
-        "circle": "Until you hit an opponent, your pawns keep going round the outer ring."
+        "circle": "Until you hit an opponent, your pawns keep going round the outer ring.",
+        "free": "Your pawns may go on into the inner ring at any time; no hit is needed."
       }
     },
     "hits": {
@@ -233,6 +241,13 @@
     },
     "reset": "Reset saved game",
     "resetTitle": "Reset saved game?",
-    "resetBody": "The game you haven't finished will be deleted."
+    "resetBody": "The game you haven't finished will be deleted.",
+    "callouts": "Call out throws",
+    "innerRing": "Inner ring",
+    "innerRings": {
+      "open": "Open from the start",
+      "hit": "Needs a hit first"
+    },
+    "innerRingHint": "Used for new games. You can still change it under Custom rules."
   }
 }

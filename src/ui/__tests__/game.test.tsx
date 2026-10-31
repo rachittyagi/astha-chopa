@@ -1,12 +1,12 @@
 import '@/i18n';
 
-import { act, fireEvent, render, screen } from '@testing-library/react-native';
+import { act, fireEvent, render, screen, within } from '@testing-library/react-native';
 import i18next from 'i18next';
 
 import { CLASSIC } from '@/engine';
 import { game, place, rigged, seatsOf, withPool } from '@/engine/testing/fixtures';
 import { Board } from '@/ui/game/Board';
-import { messageFor } from '@/ui/game/messages';
+import { messageFor, throwPhrase } from '@/ui/game/messages';
 import { selectionView } from '@/ui/game/selection';
 import { GameScreen } from '@/ui/screens/GameScreen';
 import { gameStore } from '@/ui/testing/appStoreMock';
@@ -29,13 +29,38 @@ describe('Board (TASK-45)', () => {
   it('shows a count badge on stacked pawns (R-UI-07)', async () => {
     const state = place(game(), { A0: 3, A1: 3 });
     await render(<Board state={state} size={300} view={selectionView(state, null, null)} onPawnPress={jest.fn()} />);
-    expect(screen.getByText('2')).toBeTruthy();
+    expect(within(screen.getByLabelText('Red pawn 1, square 4, outer ring')).getByText('2')).toBeTruthy();
+  });
+
+  it('draws waiting pawns on their start square; a 4 or 8 makes them tappable', async () => {
+    const onWaitingPress = jest.fn();
+    const quiet = place(game(), { A0: 3 });
+    await render(
+      <Board state={quiet} size={300} view={selectionView(quiet, null, null)} onPawnPress={jest.fn()} onWaitingPress={onWaitingPress} />,
+    );
+    expect(screen.getByLabelText('Player 1: 3 waiting')).toBeDisabled();
+    expect(screen.getByLabelText('Player 3: 4 waiting')).toBeDisabled();
+
+    const ready = withPool(place(game(), { A0: 3 }), [4]);
+    await render(
+      <Board state={ready} size={300} view={selectionView(ready, null, null)} onPawnPress={jest.fn()} onWaitingPress={onWaitingPress} />,
+    );
+    await fireEvent.press(screen.getByLabelText('Player 1: 3 waiting'));
+    expect(onWaitingPress).toHaveBeenCalled();
+    expect(screen.getByLabelText('Player 3: 4 waiting')).toBeDisabled();
   });
 });
 
 describe('event messages (R-UI-06, R-A11Y-02)', () => {
   const t = i18next.t.bind(i18next);
   const state = game();
+
+  it('speaks the throw: "It\'s 3", "Chamma!", "Ashta!", and in Hindi', async () => {
+    expect([throwPhrase(3, t), throwPhrase(4, t), throwPhrase(8, t)]).toEqual(["It's 3", 'Chamma!', 'Ashta!']);
+    await i18next.changeLanguage('hi');
+    expect([throwPhrase(2, t), throwPhrase(4, t), throwPhrase(8, t)]).toEqual(['2', 'चम्मा!', 'अष्टा!']);
+    await i18next.changeLanguage('en');
+  });
   it('calls out Chamma and Ashta, and announces every throw', () => {
     const thrown = (value: 4 | 8 | 2) => ({ id: 1, value, shells: [true, true, true, true] as const, bonus: false });
     expect(messageFor({ type: 'ThrowResolved', seat: 'A', throw: thrown(4) }, state, t)).toEqual({

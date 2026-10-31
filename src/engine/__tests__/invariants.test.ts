@@ -1,4 +1,4 @@
-import { CLASSIC, RULE_KEYS, RULE_OPTIONS, type RuleConfig } from '../config';
+import { CLASSIC, configNumber, RULE_COMBINATIONS, type RuleConfig } from '../config';
 import { checkInvariants } from '../invariants';
 import { legalMoves } from '../legal';
 import { applyAction } from '../reducer';
@@ -32,15 +32,6 @@ function playChecked(seed: number, config: RuleConfig) {
   return { state, actions, problems };
 }
 
-/** The config for combination n of the 128, each key cycling through its options. */
-function configNumber(n: number): RuleConfig {
-  const config = { ...CLASSIC } as Record<string, unknown>;
-  RULE_KEYS.forEach((key, bit) => {
-    config[key] = RULE_OPTIONS[key][(n >> bit) & 1];
-  });
-  return config as unknown as RuleConfig;
-}
-
 describe('invariant checker (R-TEST-05)', () => {
   it('catches corrupted states', () => {
     const ok = game();
@@ -68,7 +59,7 @@ describe('invariant checker (R-TEST-05)', () => {
     expect(checkInvariants(state, THROW, state)).toEqual([]);
   });
 
-  it.each([0, 37, 64, 101, 127])('random play under config #%i finishes with no violations', (n) => {
+  it.each([0, 37, 64, 101, 127, 150, RULE_COMBINATIONS - 1])('random play under config #%i finishes with no violations', (n) => {
     const { state, problems } = playChecked(1000 + n, configNumber(n));
     expect(problems).toEqual([]);
     expect(state.phase).toBe('finished');

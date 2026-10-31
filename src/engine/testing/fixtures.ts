@@ -33,10 +33,16 @@ export interface GameOptions {
   seed?: number;
 }
 
-/** A fresh game; defaults to two humans on A and C with Classic rules. */
+/**
+ * Rules for engine tests: Classic, but with the hit requirement (`block`) that most rule
+ * tests exercise. Tests of the open inner ring set `noHitBehavior: 'free'` explicitly.
+ */
+export const TEST_RULES: RuleConfig = { ...CLASSIC, noHitBehavior: 'block' };
+
+/** A fresh game; defaults to two humans on A and C with TEST_RULES. */
 export function game(opts: GameOptions = {}): GameState {
   const kinds = opts.seats ?? ['human', 'empty', 'human', 'empty'];
-  return createGame(seatsOf(kinds), { ...CLASSIC, ...opts.config }, opts.seed ?? 1, 'test-game', 0);
+  return createGame(seatsOf(kinds), { ...TEST_RULES, ...opts.config }, opts.seed ?? 1, 'test-game', 0);
 }
 
 /** Put pawns at path indices (null = waiting); progress is set to the index. */
