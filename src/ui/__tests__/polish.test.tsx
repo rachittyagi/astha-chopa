@@ -135,6 +135,8 @@ describe('How to play (TASK-60)', () => {
     expect(screen.getByText(/Use a 4 or 8 to bring one onto your start square/)).toBeTruthy();
     expect(screen.getByText(/stop at the end of the outer ring/)).toBeTruthy();
     expect(screen.getByText(/Chowka Bara, Daayam and Kanna Kauri/)).toBeTruthy();
+    expect(screen.getByText(/Three 4s or 8s in a row lose the whole turn/)).toBeTruthy();
+    expect(screen.getByText(/play carries on after the first winner/)).toBeTruthy();
     expect(screen.queryByText(/rules of your current game/)).toBeNull();
   });
 

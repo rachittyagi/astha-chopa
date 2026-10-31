@@ -167,7 +167,11 @@
       "title": "Throwing the shells",
       "body": "Four cowrie shells are thrown together. Count the shells that land mouth up.",
       "row": "{{value}}: {{up}} mouth up ({{percent}}%)",
-      "extra": "Chamma (4) and Ashta (8) earn another throw. Keep throwing until you get a 1, 2 or 3, then use the throws one by one."
+      "extra": "Chamma (4) and Ashta (8) earn another throw. Keep throwing until you get a 1, 2 or 3, then use the throws one by one.",
+      "triple": {
+        "true": "Three 4s or 8s in a row lose the whole turn, including the throws already made.",
+        "false": "There is no penalty for throwing several 4s or 8s in a row."
+      }
     },
     "moving": {
       "title": "Moving",
@@ -196,7 +200,11 @@
     "winning": {
       "title": "Winning",
       "body": "The first player to bring all four pawns to the centre wins.",
-      "bonusOnHome": "Each pawn that reaches the centre earns a bonus throw."
+      "bonusOnHome": "Each pawn that reaches the centre earns a bonus throw.",
+      "playToEnd": {
+        "true": "With 3 or 4 players, play carries on after the first winner until 2nd and 3rd place are decided.",
+        "false": "The game ends as soon as one player has all four pawns home."
+      }
     },
     "names": {
       "title": "Other names",

@@ -92,7 +92,7 @@ export function HowToPlayScreen() {
           </View>
         ))}
         <Body>{t('howToPlay.throws.extra')}</Body>
-        <Body>{t(`rules.triplePenalty.${String(rules.triplePenalty)}`)}</Body>
+        <Body>{t(`howToPlay.throws.triple.${String(rules.triplePenalty)}`)}</Body>
       </View>
 
       <View style={styles.section}>
@@ -127,7 +127,7 @@ export function HowToPlayScreen() {
           {t('howToPlay.winning.title')}
         </Text>
         <Body>{t('howToPlay.winning.body')}</Body>
-        <Body>{t(`rules.playToEnd.${String(rules.playToEnd)}`)}</Body>
+        <Body>{t(`howToPlay.winning.playToEnd.${String(rules.playToEnd)}`)}</Body>
         {rules.bonusOnHome && <Body>{t('howToPlay.winning.bonusOnHome')}</Body>}
       </View>
 
