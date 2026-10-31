@@ -7,7 +7,7 @@ import type { Settings } from '@/store/settings';
 import { Button, Screen, Segmented, Title, Toggle } from '@/ui/common';
 import { useThemedStyles, type Theme } from '@/ui/theme';
 
-const THEMES: Settings['theme'][] = ['chalk', 'wood', 'flat'];
+const THEMES: Settings['theme'][] = ['festive', 'chalk', 'wood', 'flat'];
 const SPEEDS: Settings['speed'][] = ['normal', 'fast'];
 const LANGUAGES: Settings['language'][] = ['en', 'hi'];
 const INNER_RING: Settings['innerRing'][] = ['open', 'hit'];

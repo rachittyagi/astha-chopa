@@ -2,7 +2,7 @@ import { memoryStore } from '@/services/storage';
 import { createSettingsStore, DEFAULT_SETTINGS, SETTINGS_KEY } from '@/store/settings';
 
 describe('settings store (R-SAVE-03)', () => {
-  it('starts from the defaults: chalk theme, sound and haptics on, normal speed, English', async () => {
+  it('starts from the defaults: festival theme, sound and haptics on, normal speed, English', async () => {
     const store = createSettingsStore(memoryStore());
     await store.getState().load();
     expect(store.getState()).toMatchObject({ ...DEFAULT_SETTINGS, loaded: true });
@@ -22,10 +22,10 @@ describe('settings store (R-SAVE-03)', () => {
     const storage = memoryStore({ [SETTINGS_KEY]: JSON.stringify({ theme: 'neon', speed: 'fast' }) });
     const store = createSettingsStore(storage);
     await store.getState().load();
-    expect(store.getState()).toMatchObject({ theme: 'chalk', speed: 'fast' });
+    expect(store.getState()).toMatchObject({ theme: 'festive', speed: 'fast' });
 
     const broken = createSettingsStore(memoryStore({ [SETTINGS_KEY]: '{' }));
     await broken.getState().load();
-    expect(broken.getState().theme).toBe('chalk');
+    expect(broken.getState().theme).toBe('festive');
   });
 });

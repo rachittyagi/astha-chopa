@@ -117,15 +117,100 @@ function cowrieThrow(): Float32Array {
   return out.map((v) => (v / peak) * 0.9);
 }
 
+/** A struck bell: a few inharmonic partials, the higher ones dying faster. */
+function bell(dt: number, hz: number): number {
+  if (dt < 0) return 0;
+  const partials: [number, number, number][] = [
+    [1, 1, 2.2],
+    [2.0, 0.55, 3.4],
+    [2.76, 0.42, 5],
+    [4.07, 0.28, 7.5],
+    [5.4, 0.18, 10],
+  ];
+  return partials.reduce((sum, [ratio, amp, damp]) => sum + amp * tone(dt, hz * ratio) * decay(dt, damp), 0);
+}
+
+/** A gong: low, slightly detuned partials with a long ring. */
+function gong(dt: number): number {
+  if (dt < 0) return 0;
+  return [98, 147.3, 196.8, 263.5].reduce((sum, hz, i) => sum + tone(dt, hz) * decay(dt, 1.6 + i * 0.6) / (i + 1), 0);
+}
+
+/** Tiny high tinkles, like bangles, scattered over `seconds`. */
+function sparkle(seconds: number, count: number): (t: number) => number {
+  const hits = Array.from({ length: count }, () => ({ at: Math.abs(noise()) * seconds, hz: 2600 + Math.abs(noise()) * 1800 }));
+  return (t) => hits.reduce((sum, h) => (t >= h.at ? sum + tone(t - h.at, h.hz) * decay(t - h.at, 30) * 0.12 : sum), 0);
+}
+
+function normalise(samples: Float32Array, peak = 0.9): Float32Array {
+  const max = samples.reduce((m, v) => Math.max(m, Math.abs(v)), 0) || 1;
+  return samples.map((v) => (v / max) * peak);
+}
+
+/** One handclap: a short, bright burst of noise with a tiny room tail. */
+function clapBurst(dt: number): number {
+  if (dt < 0 || dt > 0.12) return 0;
+  const body = noise() * decay(dt, 95);
+  const tail = noise() * decay(dt, 22) * 0.18;
+  return body + tail;
+}
+
+/** A few people clapping for a pawn that reached home. */
+function applause(): Float32Array {
+  const claps: number[] = [];
+  for (let person = 0; person < 6; person++) {
+    let at = Math.abs(noise()) * 0.08;
+    const beat = 0.19 + Math.abs(noise()) * 0.05;
+    while (at < 1.25) {
+      claps.push(at);
+      at += beat + noise() * 0.015;
+    }
+  }
+  let prev = 0;
+  return normalise(
+    render(1.45, (t) => {
+      let v = 0;
+      for (const at of claps) v += clapBurst(t - at) * (t > 1.0 ? Math.max(0, 1 - (t - 1.0) / 0.45) : 1);
+      // Gentle high-pass so the claps sound crisp rather than thuddy.
+      const out = v - 0.85 * prev;
+      prev = v;
+      return out;
+    }),
+    0.85,
+  );
+}
+
 const SOUNDS: Record<string, Float32Array> = {
   // A soft tap for each step.
   step: render(0.08, (t) => (tone(t, 520) * 0.5 + noise() * 0.2) * decay(t, 70)),
   // A low thud.
   hit: render(0.3, (t) => (tone(t, 110 - 60 * t) * 0.9 + noise() * 0.2) * decay(t, 14)),
-  // Two rising notes.
-  home: render(0.4, (t) => (t < 0.18 ? tone(t, 660) : tone(t, 880)) * 0.5 * decay(t % 0.18, 8)),
-  // A short arpeggio.
-  win: render(0.9, (t) => tone(t, [523, 659, 784, 1047][Math.min(3, Math.floor(t / 0.2))]!) * 0.45 * decay(t % 0.2, 5)),
+  // Chamma (4): two bright bell strikes and a sparkle.
+  chamma: (() => {
+    const shimmer = sparkle(0.6, 10);
+    return normalise(render(1.1, (t) => 0.5 * bell(t, 988) + 0.5 * bell(t - 0.14, 1319) + shimmer(t)));
+  })(),
+  // Ashta (8): a gong under a rising peal of bells; bigger than Chamma.
+  ashta: (() => {
+    const shimmer = sparkle(0.9, 16);
+    const peal = [784, 988, 1175, 1568];
+    return normalise(
+      render(1.7, (t) => 0.55 * gong(t) + peal.reduce((sum, hz, i) => sum + 0.32 * bell(t - 0.08 - i * 0.11, hz), 0) + shimmer(t)),
+    );
+  })(),
+  // A pawn reached home: applause.
+  clap: applause(),
+  // The winner: a bright fanfare ending on a held chord.
+  win: (() => {
+    const notes = [523, 659, 784, 1047];
+    return normalise(
+      render(1.8, (t) => {
+        const run = notes.reduce((sum, hz, i) => sum + 0.35 * bell(t - i * 0.14, hz), 0);
+        const chord = t > 0.62 ? [523, 659, 784, 1047].reduce((sum, hz) => sum + tone(t, hz), 0) * 0.12 * decay(t - 0.62, 1.4) : 0;
+        return run + chord;
+      }),
+    );
+  })(),
 };
 
 const dir = join(__dirname, '..', 'assets', 'sounds');

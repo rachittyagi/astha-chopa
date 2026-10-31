@@ -6,6 +6,7 @@ import { APP_NAME } from '@/config/app';
 import { gameStore, useGame, useSettings } from '@/store/app';
 import { Button, Screen } from '@/ui/common';
 import { SeatMark } from '@/ui/game/Controls';
+import { Cowrie } from '@/ui/game/Cowrie';
 import { firstSetup } from '@/ui/setup/presets';
 import { useThemedStyles, type Theme } from '@/ui/theme';
 
@@ -14,6 +15,7 @@ const makeStyles = (c: Theme) => ({
   title: { fontSize: 44, fontWeight: '800' as const, color: c.accent, textAlign: 'center' as const },
   subtitle: { fontSize: 18, color: c.muted, textAlign: 'center' as const },
   notice: { color: c.danger, textAlign: 'center' as const, fontSize: 16 },
+  shells: { flexDirection: 'row' as const, gap: 14, marginTop: 18 },
   players: { flexDirection: 'row' as const, flexWrap: 'wrap' as const, justifyContent: 'center' as const, gap: 14 },
   player: { flexDirection: 'row' as const, alignItems: 'center' as const, gap: 6 },
   playerName: { fontSize: 18, color: c.text },
@@ -50,6 +52,13 @@ export function HomeScreen() {
           {APP_NAME}
         </Text>
         <Text style={styles.subtitle}>{t('home.tagline')}</Text>
+        <View style={styles.shells} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+          {[true, false, true, true].map((up, i) => (
+            <View key={i} style={{ transform: [{ rotate: `${[-14, 8, -4, 16][i]}deg` }] }}>
+              <Cowrie up={up} size={64} />
+            </View>
+          ))}
+        </View>
       </View>
       {problem && (
         <Text style={styles.notice} onPress={() => gameStore.getState().dismissSaveProblem()}>

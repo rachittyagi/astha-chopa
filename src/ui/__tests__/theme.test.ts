@@ -33,6 +33,10 @@ describe.each(Object.keys(THEMES) as ThemeName[])('theme %s meets WCAG AA (R-A11
   it('safe-square marks and grid lines stand out from the board (3:1 for graphics)', () => {
     expect(contrast(t.safeMark, t.board)).toBeGreaterThanOrEqual(3);
   });
+
+  it('pawn outlines stand out from the board (3:1 for graphics)', () => {
+    expect(contrast(t.pawnOutline, t.board)).toBeGreaterThanOrEqual(3);
+  });
 });
 
 describe('pawn badges', () => {

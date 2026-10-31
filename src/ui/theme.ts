@@ -1,4 +1,4 @@
-// Board themes (R-UX-01): chalk-on-floor (default), wooden board, modern flat.
+// Board themes (R-UX-01): festival (default), chalk-on-floor, wooden board, modern flat.
 import { useMemo } from 'react';
 import { StyleSheet, type ImageStyle, type TextStyle, type ViewStyle } from 'react-native';
 
@@ -20,11 +20,31 @@ export interface Theme {
   danger: string;
   overlay: string;
   onOverlay: string;
+  /** Outline round each pawn, chosen to stand out from this board. */
+  pawnOutline: string;
 }
 
 export type ThemeName = Settings['theme'];
 
 export const THEMES: Record<ThemeName, Theme> = {
+  // Warm, bright and high-contrast: marigold board, saffron buttons, rangoli magenta marks.
+  festive: {
+    background: '#fff4e0',
+    surface: '#ffffff',
+    board: '#ffd98f',
+    boardLine: '#7a2e00',
+    safeMark: '#b0124f',
+    text: '#2a1608',
+    muted: '#5a3e26',
+    accent: '#b83a00',
+    onAccent: '#ffffff',
+    highlight: '#0a7ea4',
+    preview: 'rgba(10, 126, 164, 0.28)',
+    danger: '#a3160f',
+    overlay: 'rgba(42, 22, 8, 0.78)',
+    onOverlay: '#ffffff',
+    pawnOutline: '#2a1608',
+  },
   chalk: {
     background: '#26302b',
     surface: '#34403a',
@@ -40,6 +60,7 @@ export const THEMES: Record<ThemeName, Theme> = {
     danger: '#ff9e94',
     overlay: 'rgba(0, 0, 0, 0.7)',
     onOverlay: '#ffffff',
+    pawnOutline: '#ffffffcc',
   },
   wood: {
     background: '#f3e6cf',
@@ -56,6 +77,7 @@ export const THEMES: Record<ThemeName, Theme> = {
     danger: '#a3221b',
     overlay: 'rgba(0, 0, 0, 0.6)',
     onOverlay: '#ffffff',
+    pawnOutline: '#2b1d10',
   },
   flat: {
     background: '#f6f7fb',
@@ -72,6 +94,7 @@ export const THEMES: Record<ThemeName, Theme> = {
     danger: '#c62828',
     overlay: 'rgba(0, 0, 0, 0.6)',
     onOverlay: '#ffffff',
+    pawnOutline: '#2b1d10',
   },
 };
 

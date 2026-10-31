@@ -9,7 +9,7 @@ import { CLASSIC, type GameEvent } from '@/engine';
 import { seatsOf } from '@/engine/testing/fixtures';
 import en from '@/i18n/en.json';
 import hi from '@/i18n/hi.json';
-import { cuesFor } from '@/services/feedback';
+import { cuesFor, specialThrowSound } from '@/services/feedback';
 import { memoryStore } from '@/services/storage';
 import { createSettingsStore, defaultRules } from '@/store/settings';
 import { durations, motionsFor } from '@/ui/game/motion';
@@ -48,7 +48,7 @@ describe('animations from events (TASK-51, R-UI-05)', () => {
 });
 
 describe('sound and haptic cues (TASK-54, R-UX-03)', () => {
-  it('throw, step, hit, home and a human win each have a cue', () => {
+  it('throw, step, hit, a clap for home and a fanfare for the winner', () => {
     const thrown = { id: 1, value: 2 as const, shells: [true, true, false, false] as const, bonus: false };
     const events: GameEvent[] = [
       { type: 'ThrowResolved', seat: 'A', throw: thrown },
@@ -57,11 +57,21 @@ describe('sound and haptic cues (TASK-54, R-UX-03)', () => {
       { type: 'PawnHome', pawnId: 'A1' },
       { type: 'PlayerFinished', seat: 'A', rank: 1 },
     ];
-    expect(cuesFor(events, ['A'])).toEqual({ sounds: ['throw', 'step', 'hit', 'home', 'win'], haptics: ['throw', 'hit'] });
+    expect(cuesFor(events)).toEqual({ sounds: ['throw', 'step', 'hit', 'clap', 'win'], haptics: ['throw', 'hit'] });
   });
 
-  it('no win sound when a bot wins', () => {
-    expect(cuesFor([{ type: 'PlayerFinished', seat: 'C', rank: 1 }], ['A']).sounds).toEqual([]);
+  it('only the first place gets the fanfare', () => {
+    expect(cuesFor([{ type: 'PlayerFinished', seat: 'C', rank: 2 }]).sounds).toEqual([]);
+  });
+
+  it('Chamma and Ashta have their own sounds; other throws do not', () => {
+    expect([1, 2, 3, 4, 8].map((v) => specialThrowSound(v as 1 | 2 | 3 | 4 | 8))).toEqual([
+      null,
+      null,
+      null,
+      'chamma',
+      'ashta',
+    ]);
   });
 });
 

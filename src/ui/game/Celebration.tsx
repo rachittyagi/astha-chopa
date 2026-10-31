@@ -1,0 +1,126 @@
+// The winner's moment: confetti, a trophy and their name, until they tap Continue.
+import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { AccessibilityInfo, Animated, Easing, Modal, Platform, Text, useWindowDimensions, View } from 'react-native';
+
+import type { Seat } from '@/engine';
+import { Button } from '@/ui/common';
+import { SeatMark } from '@/ui/game/Controls';
+import { PAWN_COLORS, useThemedStyles, type Theme } from '@/ui/theme';
+
+const PIECES = 40;
+const FALL_MS = 2600;
+const FESTIVE = ['#f59e0b', '#e11d48', '#0ea5e9', '#22c55e', '#a855f7', '#f97316'];
+
+interface Piece {
+  x: number;
+  delay: number;
+  size: number;
+  color: string;
+  spin: number;
+  drift: number;
+}
+
+const makeStyles = (c: Theme) => ({
+  overlay: { flex: 1, backgroundColor: c.overlay, justifyContent: 'center' as const, alignItems: 'center' as const },
+  card: {
+    backgroundColor: c.surface,
+    borderRadius: 24,
+    paddingVertical: 28,
+    paddingHorizontal: 24,
+    alignItems: 'center' as const,
+    gap: 14,
+    width: '86%' as const,
+    maxWidth: 420,
+  },
+  trophy: { fontSize: 72 },
+  title: { fontSize: 32, fontWeight: '800' as const, color: c.text, textAlign: 'center' as const },
+  subtitle: { fontSize: 20, color: c.muted, textAlign: 'center' as const },
+  row: { flexDirection: 'row' as const, alignItems: 'center' as const, gap: 10 },
+  button: { alignSelf: 'stretch' as const },
+});
+
+export function Celebration({ seat, onDone }: { seat: Seat | null; onDone(): void }) {
+  const { t } = useTranslation();
+  const { styles } = useThemedStyles(makeStyles);
+  const { width, height } = useWindowDimensions();
+  const [fall] = useState(() => new Animated.Value(0));
+  // Random once per celebration: where each piece starts, how it spins and drifts.
+  const [pieces] = useState<Piece[]>(() =>
+    Array.from({ length: PIECES }, () => ({
+      x: Math.random(),
+      delay: Math.random() * 0.35,
+      size: 8 + Math.random() * 10,
+      color: FESTIVE[Math.floor(Math.random() * FESTIVE.length)]!,
+      spin: (Math.random() - 0.5) * 1440,
+      drift: (Math.random() - 0.5) * 80,
+    })),
+  );
+
+  useEffect(() => {
+    if (!seat) return;
+    AccessibilityInfo.announceForAccessibility(t('game.celebrate.title', { name: seat.name }));
+    fall.setValue(0);
+    const animation = Animated.loop(
+      Animated.timing(fall, {
+        toValue: 1,
+        duration: FALL_MS,
+        easing: Easing.linear,
+        useNativeDriver: Platform.OS !== 'web',
+      }),
+      { iterations: 2 },
+    );
+    animation.start();
+    return () => animation.stop();
+  }, [seat, fall, t]);
+
+  if (!seat) return null;
+  const colors = [PAWN_COLORS[seat.color]!, ...FESTIVE];
+
+  return (
+    <Modal transparent visible animationType="fade" onRequestClose={onDone}>
+      <View style={styles.overlay}>
+        {pieces.map((p, i) => {
+          const start = p.delay;
+          const translateY = fall.interpolate({
+            inputRange: [0, start, 1],
+            outputRange: [-40, -40, height + 40],
+          });
+          const translateX = fall.interpolate({ inputRange: [0, 1], outputRange: [0, p.drift] });
+          const rotate = fall.interpolate({ inputRange: [0, 1], outputRange: ['0deg', `${p.spin}deg`] });
+          return (
+            <Animated.View
+              key={i}
+              pointerEvents="none"
+              style={{
+                position: 'absolute',
+                top: 0,
+                left: p.x * width,
+                width: p.size,
+                height: p.size * 0.5,
+                borderRadius: 2,
+                backgroundColor: i % 3 === 0 ? colors[0] : p.color,
+                transform: [{ translateY }, { translateX }, { rotate }],
+              }}
+            />
+          );
+        })}
+        <View style={styles.card} accessibilityViewIsModal>
+          <Text style={styles.trophy} accessibilityElementsHidden importantForAccessibility="no">
+            🏆
+          </Text>
+          <View style={styles.row}>
+            <SeatMark seat={seat.id} color={seat.color} size={30} />
+            <Text style={styles.title} accessibilityRole="header">
+              {t('game.celebrate.title', { name: seat.name })}
+            </Text>
+          </View>
+          <Text style={styles.subtitle}>{t('game.celebrate.subtitle')}</Text>
+          <View style={styles.button}>
+            <Button label={t('game.celebrate.continue')} size="large" onPress={onDone} />
+          </View>
+        </View>
+      </View>
+    </Modal>
+  );
+}

@@ -96,10 +96,10 @@ const makeStyles = (c: Theme) => ({
     alignItems: 'center' as const,
     justifyContent: 'center' as const,
     borderWidth: 2,
-    borderColor: '#ffffffcc',
+    borderColor: c.pawnOutline,
   },
   movable: { borderColor: c.highlight, borderWidth: 3 },
-  waiting: { opacity: 0.5, borderStyle: 'dashed' as const, borderColor: c.boardLine },
+  waiting: { opacity: 0.7, borderStyle: 'dashed' as const, borderColor: c.boardLine },
   label: { fontWeight: '700' as const },
 });
 

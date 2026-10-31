@@ -5,11 +5,12 @@ import { AccessibilityInfo, Modal, Text, useWindowDimensions, View } from 'react
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { botDelay } from '@/bot';
-import { humanStillPlaying, RULE_KEYS, type GameState, type Seat, type Throw } from '@/engine';
-import { cuesFor, playCues, speak } from '@/services/feedback';
+import { humanStillPlaying, RULE_KEYS, type GameState, type Seat, type SeatId, type Throw } from '@/engine';
+import { cuesFor, playCues, playSound, speak, specialThrowSound } from '@/services/feedback';
 import { gameStore, settingsStore, useGame, useSettings } from '@/store/app';
 import { Button, Title } from '@/ui/common';
 import { Board } from '@/ui/game/Board';
+import { Celebration } from '@/ui/game/Celebration';
 import { MoveChoice, PoolChips, SeatMark, Shells, TurnBanner } from '@/ui/game/Controls';
 import { messageFor, throwPhrase } from '@/ui/game/messages';
 import { durations, motionsFor, type Motion } from '@/ui/game/motion';
@@ -45,8 +46,11 @@ function useEventFeedback() {
   const [motions, setMotions] = useState<Motion[]>([]);
   // The latest throw stays visible even when its turn ends at once (no legal move).
   const [lastThrow, setLastThrow] = useState<Throw | null>(null);
+  // The seat that just finished first, celebrated on screen.
+  const [winner, setWinner] = useState<SeatId | null>(null);
   const nextMotionId = useRef(1);
   const calloutTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const speechTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(
     () =>
@@ -61,9 +65,17 @@ function useEventFeedback() {
         const settings = settingsStore.getState();
         const wait = thrown ? durations(settings.speed === 'fast' || !humanStillPlaying(game)).shellsMs : 0;
         const show = () => {
-          // Call out the result once the shells settle ("It's 3", "Chamma!").
-          if (thrown?.type === 'ThrowResolved' && settings.callouts) {
-            speak(throwPhrase(thrown.throw.value, t), settings.language);
+          // Once the shells settle: Chamma and Ashta get their own sound, then the result is
+          // spoken ("3", "Chamma!"), just after the special sound so the two do not clash.
+          if (thrown?.type === 'ThrowResolved') {
+            const special = specialThrowSound(thrown.throw.value);
+            if (special) playSound(special, settings);
+            if (settings.callouts) {
+              const phrase = throwPhrase(thrown.throw.value, t);
+              if (speechTimer.current) clearTimeout(speechTimer.current);
+              if (special && settings.sound) speechTimer.current = setTimeout(() => speak(phrase, settings.language), 450);
+              else speak(phrase, settings.language);
+            }
           }
           if (shown.length > 0) setCallout(shown[shown.length - 1]!);
           if (spoken.length > 0) AccessibilityInfo.announceForAccessibility(spoken.join('. '));
@@ -76,8 +88,10 @@ function useEventFeedback() {
         nextMotionId.current += added.length;
         if (added.length > 0) setMotions((queue) => [...queue, ...added]);
 
-        const humans = game.seats.filter((s) => s.kind === 'human').map((s) => s.id);
-        playCues(cuesFor(events, humans), settingsStore.getState());
+        const first = events.find((e) => e.type === 'PlayerFinished' && e.rank === 1);
+        if (first?.type === 'PlayerFinished') setWinner(first.seat);
+
+        playCues(cuesFor(events), settingsStore.getState());
         gameStore.getState().consumeEvents(events.length);
       }),
     [t],
@@ -86,6 +100,7 @@ function useEventFeedback() {
   useEffect(
     () => () => {
       if (calloutTimer.current) clearTimeout(calloutTimer.current);
+      if (speechTimer.current) clearTimeout(speechTimer.current);
     },
     [],
   );
@@ -97,7 +112,8 @@ function useEventFeedback() {
   }, [callout]);
 
   const motionDone = useCallback((id: number) => setMotions((queue) => queue.filter((m) => m.id !== id)), []);
-  return { callout, motions, motionDone, lastThrow };
+  const clearWinner = useCallback(() => setWinner(null), []);
+  return { callout, motions, motionDone, lastThrow, winner, clearWinner };
 }
 
 const makeStyles = (c: Theme) => ({
@@ -210,12 +226,14 @@ export function GameScreen() {
   // Bot-only play runs at Fast automatically (R-UX-04).
   const fast = speedFast || (!!game && !humanStillPlaying(game));
   const timing = durations(fast);
-  useBotDriver(game, paused, fast);
-  const { callout, motions, motionDone, lastThrow } = useEventFeedback();
+  const { callout, motions, motionDone, lastThrow, winner, clearWinner } = useEventFeedback();
+  // Bots wait while the winner is being celebrated.
+  useBotDriver(game, paused || winner !== null, fast);
 
   useEffect(() => {
-    if (game?.phase === 'finished') router.replace('/result');
-  }, [game?.phase, router]);
+    // Go to the results once the game is over and the celebration has been dismissed.
+    if (game?.phase === 'finished' && winner === null) router.replace('/result');
+  }, [game?.phase, winner, router]);
 
   if (!game) return <Redirect href="/" />;
 
@@ -316,6 +334,7 @@ export function GameScreen() {
 
   const menus = (
     <>
+      <Celebration seat={game.seats.find((s) => s.id === winner) ?? null} onDone={clearWinner} />
       <MoveChoice
         visible={choice !== null}
         onOne={() => {

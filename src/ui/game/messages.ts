@@ -37,6 +37,8 @@ export function messageFor(event: GameEvent, state: GameState, t: TFunction): Ev
     case 'PawnHome':
       return { callout: t('game.event.home') };
     case 'PlayerFinished': {
+      // First place gets the full-screen celebration instead.
+      if (event.rank === 1) return {};
       const text = t('game.event.finished', { name: name(event.seat), rank: event.rank });
       return { callout: text, announce: text };
     }

@@ -4,7 +4,7 @@ import { act, fireEvent, render, screen } from '@testing-library/react-native';
 import i18next from 'i18next';
 
 import { CLASSIC } from '@/engine';
-import { game, place, rigged, seatsOf, withPool } from '@/engine/testing/fixtures';
+import { game, place, rigged, seatsOf, withHit, withPool } from '@/engine/testing/fixtures';
 import { Board } from '@/ui/game/Board';
 import { messageFor, throwPhrase } from '@/ui/game/messages';
 import { selectionView } from '@/ui/game/selection';
@@ -56,8 +56,8 @@ describe('event messages (R-UI-06, R-A11Y-02)', () => {
   const t = i18next.t.bind(i18next);
   const state = game();
 
-  it('speaks the throw: "It\'s 3", "Chamma!", "Ashta!", and in Hindi', async () => {
-    expect([throwPhrase(3, t), throwPhrase(4, t), throwPhrase(8, t)]).toEqual(["It's 3", 'Chamma!', 'Ashta!']);
+  it('speaks the throw clearly: just "3", or "Chamma!" / "Ashta!", and in Hindi', async () => {
+    expect([throwPhrase(3, t), throwPhrase(4, t), throwPhrase(8, t)]).toEqual(['3', 'Chamma!', 'Ashta!']);
     await i18next.changeLanguage('hi');
     expect([throwPhrase(2, t), throwPhrase(4, t), throwPhrase(8, t)]).toEqual(['2', 'चम्मा!', 'अष्टा!']);
     await i18next.changeLanguage('en');
@@ -77,7 +77,8 @@ describe('event messages (R-UI-06, R-A11Y-02)', () => {
     expect(messageFor({ type: 'PoolDiscarded', seat: 'A', throws: [] }, state, t).callout).toBe('No legal move');
     expect(messageFor({ type: 'TurnForfeited', seat: 'A', throws: [] }, state, t).callout).toMatch(/forfeited/);
     expect(messageFor({ type: 'InnerRingUnlocked', seat: 'A' }, state, t).callout).toBe('Inner ring unlocked');
-    expect(messageFor({ type: 'PlayerFinished', seat: 'C', rank: 1 }, state, t).callout).toBe('Player 3 finished in place 1');
+    expect(messageFor({ type: 'PlayerFinished', seat: 'C', rank: 2 }, state, t).callout).toBe('Player 3 finished in place 2');
+    expect(messageFor({ type: 'PlayerFinished', seat: 'C', rank: 1 }, state, t)).toEqual({});
     expect(messageFor({ type: 'TurnPassed', from: 'A', to: 'C' }, state, t)).toEqual({ announce: "Player 3's turn" });
     expect(messageFor({ type: 'StalemateBroken' }, state, t).callout).toMatch(/circle/);
     expect(messageFor({ type: 'PawnHome', pawnId: 'A0' }, state, t).callout).toBe('A pawn reached home');
@@ -118,6 +119,17 @@ describe('Game screen (TASK-46, TASK-48)', () => {
     expect(gameStore.getState().game).toBeNull();
     expect(gameStore.getState().saved).not.toBeNull();
     expect(mockRouter.replace).toHaveBeenCalledWith('/');
+  });
+
+  it('celebrates the winner, then goes to the results on Continue', async () => {
+    const base = withHit(place(gameStore.getState().game!, { A0: 24, A1: 24, A2: 24, A3: 22 }), 'A');
+    gameStore.setState({ game: withPool(base, [2]) });
+    await render(<GameScreen />);
+    await fireEvent.press(screen.getByLabelText('Red pawn 4, square 23, inner ring'));
+    expect(screen.getByText('Player 1 wins!')).toBeTruthy();
+    expect(mockRouter.replace).not.toHaveBeenCalledWith('/result');
+    await fireEvent.press(screen.getByRole('button', { name: 'Continue' }));
+    expect(mockRouter.replace).toHaveBeenCalledWith('/result');
   });
 
   it('plays bot turns on its own after a short pause (R-BOT-02)', async () => {

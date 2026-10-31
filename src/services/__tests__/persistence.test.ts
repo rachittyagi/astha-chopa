@@ -1,8 +1,7 @@
 import { applyAction, legalMoves, type Action, type GameState } from '@/engine';
-import { game } from '@/engine/testing/fixtures';
 import { GAME_KEY, loadGame, loadSetup, parseSavedGame, parseSetup, saveGame, saveSetup, SETUP_KEY } from '@/services/persistence';
 import { CLASSIC } from '@/engine';
-import { seatsOf } from '@/engine/testing/fixtures';
+import { game, seatsOf } from '@/engine/testing/fixtures';
 import { memoryStore } from '@/services/storage';
 
 function step(state: GameState): Action {

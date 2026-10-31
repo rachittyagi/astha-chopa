@@ -8,7 +8,7 @@ import type { KeyValueStore } from '@/services/storage';
 export const SETTINGS_KEY = 'settings.v1';
 
 export interface Settings {
-  theme: 'chalk' | 'wood' | 'flat';
+  theme: 'festive' | 'chalk' | 'wood' | 'flat';
   sound: boolean;
   haptics: boolean;
   speed: 'normal' | 'fast';
@@ -20,7 +20,7 @@ export interface Settings {
 }
 
 export const DEFAULT_SETTINGS: Settings = {
-  theme: 'chalk',
+  theme: 'festive',
   sound: true,
   haptics: true,
   speed: 'normal',
@@ -44,7 +44,7 @@ function pickSettings(value: unknown): Partial<Settings> {
   if (!value || typeof value !== 'object') return {};
   const v = value as Record<string, unknown>;
   const out: Partial<Settings> = {};
-  if (v.theme === 'chalk' || v.theme === 'wood' || v.theme === 'flat') out.theme = v.theme;
+  if (v.theme === 'festive' || v.theme === 'chalk' || v.theme === 'wood' || v.theme === 'flat') out.theme = v.theme;
   if (typeof v.sound === 'boolean') out.sound = v.sound;
   if (typeof v.haptics === 'boolean') out.haptics = v.haptics;
   if (v.speed === 'normal' || v.speed === 'fast') out.speed = v.speed;
