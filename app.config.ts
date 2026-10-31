@@ -26,7 +26,11 @@ const config: ExpoConfig = {
     },
     predictiveBackGestureEnabled: false,
   },
-  plugins: ['expo-router'],
+  plugins: [
+    'expo-router',
+    // Sound playback only: no microphone, recording or background audio (R-LOCAL-02).
+    ['expo-audio', { microphonePermission: false, recordAudioAndroid: false, enableBackgroundPlayback: false }],
+  ],
   extra: {
     // development | preview | release, set by the EAS build profile (eas.json).
     variant: process.env.APP_VARIANT ?? 'development',

@@ -166,37 +166,37 @@ Companion to [requirements.md](requirements.md) and [design.md](design.md). Tick
 
 ## M4 Polish
 
-- [ ] TASK-51: Event-driven animations: square-by-square moves, hit knock-back, shell roll ~700 ms, Normal/Fast, auto-Fast for bot-only play
+- [x] TASK-51: Event-driven animations: square-by-square moves, hit knock-back, shell roll ~700 ms, Normal/Fast, auto-Fast for bot-only play
   Links: DES-12, DES-15 | REQ-16, REQ-17
   Outcome: animations follow the event queue; input for the next legal action is never blocked.
-- [ ] TASK-52: Callouts (Chamma, Ashta, Hit! Bonus throw, Inner ring unlocked, No legal move, Turn forfeited)
+- [x] TASK-52: Callouts (Chamma, Ashta, Hit! Bonus throw, Inner ring unlocked, No legal move, Turn forfeited)
   Links: DES-15 | REQ-16
   Outcome: each engine event shows its callout (component test per event).
-- [ ] TASK-53: Three themes (chalk default, wooden, modern flat) with live switching; per-seat pawn shapes
+- [x] TASK-53: Three themes (chalk default, wooden, modern flat) with live switching; per-seat pawn shapes
   Links: DES-16 | REQ-17
   Outcome: switching in Settings mid-game re-renders immediately (AC-16).
-- [ ] TASK-54: Sound effects and haptics services with settings toggles
+- [x] TASK-54: Sound effects and haptics services with settings toggles
   Links: DES-16 | REQ-17
   Outcome: toggling off silences sound/haptics (service tests with mocks).
-- [ ] TASK-55: Tablet landscape layout with per-seat panels and throw buttons rotated toward each player
+- [x] TASK-55: Tablet landscape layout with per-seat panels and throw buttons rotated toward each player
   Links: DES-15 | REQ-16
   Outcome: manual check on a tablet; phone layout unchanged.
 - [ ] TASK-56: Accessibility labels, screen-reader announcements, 44 pt targets, 150% font scaling
   Links: DES-17 | REQ-18
-  Outcome: tests assert labels on every pressable; manual VoiceOver/TalkBack full turn (AC-14).
-- [ ] TASK-57: Contrast test for all theme tokens (WCAG AA 4.5:1)
+  Outcome: tests assert labels on every pressable; manual VoiceOver/TalkBack full turn (AC-14). (Labels, announcements and 44 pt targets done 2026-10-31; the VoiceOver/TalkBack run and the 150% font-size check move to the device pass in TASK-66.)
+- [x] TASK-57: Contrast test for all theme tokens (WCAG AA 4.5:1)
   Links: DES-17 | REQ-18
   Outcome: unit test passes for all three themes.
-- [ ] TASK-58: i18next setup, en.json, hi.json, literal-string lint rule, Devanagari fallback font
+- [x] TASK-58: i18next setup, en.json, hi.json, literal-string lint rule, Devanagari fallback font
   Links: DES-18 | REQ-19
   Outcome: lint finds no literal strings in `src/app` and `src/ui`; Hindi renders in all themes.
-- [ ] TASK-59: `src/config/app.ts` APP_NAME wired into app.config.ts, splash and in-app title
+- [x] TASK-59: `src/config/app.ts` APP_NAME wired into app.config.ts, splash and in-app title
   Links: DES-18 | REQ-19
   Outcome: changing APP_NAME and rebuilding updates all in-app occurrences (AC-17).
-- [ ] TASK-60: How to play pages (board, throws, moving, hits, doubles, winning) reflecting active RuleConfig and listing regional names
+- [x] TASK-60: How to play pages (board, throws, moving, hits, doubles, winning) reflecting active RuleConfig and listing regional names
   Links: DES-14 | REQ-15, REQ-19
   Outcome: opened from a Custom game, pages show that game's toggles.
-- [ ] TASK-61: Settings screen (theme, sound, haptics, speed, language, reset saved game)
+- [x] TASK-61: Settings screen (theme, sound, haptics, speed, language, reset saved game)
   Links: DES-14, DES-16 | REQ-15, REQ-17
   Outcome: each control persists and takes effect.
 

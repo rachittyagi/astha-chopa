@@ -79,7 +79,7 @@ describe('Game screen (TASK-46, TASK-48)', () => {
   it('enters a pawn from the waiting area with a 4', async () => {
     gameStore.setState({ game: withPool(gameStore.getState().game!, [4, 2]) });
     await render(<GameScreen />);
-    await fireEvent.press(screen.getByLabelText('Player 1: Waiting 4'));
+    await fireEvent.press(screen.getByLabelText('Player 1: 4 waiting'));
     expect(gameStore.getState().game?.pawns.find((p) => p.id === 'A0')?.pathIndex).toBe(0);
   });
 

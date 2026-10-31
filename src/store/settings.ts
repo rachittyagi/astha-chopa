@@ -39,7 +39,8 @@ function pickSettings(value: unknown): Partial<Settings> {
   return out;
 }
 
-export function createSettingsStore(storage: KeyValueStore) {
+/** `detectLanguage` picks the first-launch language from the device (no saved choice yet). */
+export function createSettingsStore(storage: KeyValueStore, detectLanguage: () => Settings['language'] = () => 'en') {
   return createStore<SettingsStore>()((set, get) => ({
     ...DEFAULT_SETTINGS,
     loaded: false,
@@ -50,7 +51,7 @@ export function createSettingsStore(storage: KeyValueStore) {
       } catch {
         saved = {};
       }
-      set({ ...saved, loaded: true });
+      set({ language: detectLanguage(), ...saved, loaded: true });
     },
     update(patch) {
       set(patch);

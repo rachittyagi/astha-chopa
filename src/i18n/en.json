@@ -10,7 +10,8 @@
     "howToPlay": "How to play",
     "settings": "Settings",
     "saveUnreadable": "Your saved game couldn't be read, so it was removed.",
-    "saveOldVersion": "Your saved game is from an older version of the app, so it was removed."
+    "saveOldVersion": "Your saved game is from an older version of the app, so it was removed.",
+    "tagline": "Ashta Chamma for 1 to 4 players on one device"
   },
   "setup": {
     "title": "New game",
@@ -100,7 +101,6 @@
     "throwAgain": "Throw again",
     "pause": "Pause",
     "pool": "Throws to use",
-    "waiting": "Waiting",
     "home": "Home: {{count}}",
     "hasHit": "Inner ring open",
     "noHitYet": "No hit yet",
@@ -123,44 +123,108 @@
     "a11y": {
       "pawn": "{{color}} pawn {{n}}, {{where}}",
       "square": "square {{index}}, {{ring}} ring",
-      "waitingPawn": "waiting to enter",
       "atHome": "home",
       "chip": "Throw of {{value}}",
       "shellUp": "mouth up",
       "shellDown": "mouth down",
       "thrown": "{{name}} threw {{value}}",
-      "turn": "{{name}}'s turn"
+      "turn": "{{name}}'s turn",
+      "waitingArea": "{{name}}: {{count}} waiting"
     },
     "ring": {
       "outer": "outer",
       "inner": "inner",
       "home": "home"
     },
-    "pickEnter": "Tap your waiting pawns to bring one in"
+    "pickEnter": "Tap your waiting pawns to bring one in",
+    "panelInfo": "{{home}} · {{hit}}"
   },
   "pause": {
     "title": "Paused",
     "resume": "Resume",
     "restart": "Restart with same setup",
     "rules": "Rules summary",
-    "quit": "Quit to Home"
+    "quit": "Quit to Home",
+    "ruleLine": "{{label}}: {{value}}"
   },
   "result": {
     "title": "Results",
     "place": "{{rank}}.",
     "playAgain": "Play again",
     "newGame": "New game",
-    "home": "Home"
+    "home": "Home",
+    "a11y": "Place {{rank}}: {{name}}"
   },
   "howToPlay": {
     "title": "How to play",
-    "comingSoon": "Illustrated rules arrive in the next update."
+    "yourRules": "These pages follow the rules of your current game.",
+    "board": {
+      "title": "The board",
+      "picture": "A 5 by 5 board. Each player starts in the middle of their side. The four start squares and the centre are marked with a cross.",
+      "body": "Each player races four pawns around the outer ring, then the inner ring, to the centre. Squares marked with a cross are safe: nobody can be hit there."
+    },
+    "throws": {
+      "title": "Throwing the shells",
+      "body": "Four cowrie shells are thrown together. Count the shells that land mouth up.",
+      "row": "{{value}}: {{up}} mouth up ({{percent}}%)",
+      "extra": "Chamma (4) and Ashta (8) earn another throw. Keep throwing until you get a 1, 2 or 3, then use the throws one by one."
+    },
+    "moving": {
+      "title": "Moving",
+      "entry": {
+        "onStart": "All pawns begin on your start square.",
+        "needChammaOrAshta": "Pawns begin off the board. Use a 4 or 8 to bring one onto your start square."
+      },
+      "body": "Each throw moves one pawn (or a double) by its full value. You need the exact count to reach the centre. If no throw can be used, your turn passes.",
+      "noHit": {
+        "block": "Until you hit an opponent, your pawns stop at the end of the outer ring.",
+        "circle": "Until you hit an opponent, your pawns keep going round the outer ring."
+      }
+    },
+    "hits": {
+      "title": "Hitting",
+      "body": "Land on a square with one opponent pawn to send it back to its start square. A hit earns a bonus throw and opens the inner ring for all your pawns."
+    },
+    "doubles": {
+      "title": "Doubles",
+      "on": {
+        "blockOnce": "Two of your pawns on one square make a double. Nobody can land on it, and on the outer ring opponents cannot pass it on their next turn. A double can move together.",
+        "free": "Two of your pawns on one square make a double. Nobody can land on it, but opponents may pass it. A double can move together."
+      },
+      "off": "Your pawns may share a square, but they never block or move together. Landing on several of an opponent's pawns hits them all."
+    },
+    "winning": {
+      "title": "Winning",
+      "body": "The first player to bring all four pawns to the centre wins.",
+      "bonusOnHome": "Each pawn that reaches the centre earns a bonus throw."
+    },
+    "names": {
+      "title": "Other names",
+      "body": "{{app}} is the game also known as Ashta Chamma, Chowka Bara, Daayam and Kanna Kauri across India."
+    }
   },
   "settings": {
     "title": "Settings",
-    "comingSoon": "Themes, sound and language settings arrive in the next update."
-  },
-  "debug": {
-    "starting": "Starting a test game with seed {{seed}}"
+    "theme": "Board theme",
+    "themes": {
+      "chalk": "Chalk on floor",
+      "wood": "Wooden board",
+      "flat": "Modern flat"
+    },
+    "sound": "Sound effects",
+    "haptics": "Vibration",
+    "speed": "Animation speed",
+    "speeds": {
+      "normal": "Normal",
+      "fast": "Fast"
+    },
+    "language": "Language",
+    "languages": {
+      "en": "English",
+      "hi": "हिन्दी"
+    },
+    "reset": "Reset saved game",
+    "resetTitle": "Reset saved game?",
+    "resetBody": "The game you haven't finished will be deleted."
   }
 }

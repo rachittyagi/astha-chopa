@@ -1,7 +1,7 @@
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Alert, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Alert, Pressable, Text, TextInput, View } from 'react-native';
 
 import {
   CLASSIC,
@@ -18,13 +18,34 @@ import { BOT_LEVELS } from '@/bot';
 import { gameStore, useGame } from '@/store/app';
 import { Button, Screen, Segmented, Title } from '@/ui/common';
 import { nextColor, PLAYER_COUNTS, presetSeats, setKind, type PlayerCount } from '@/ui/setup/presets';
-import { colors, MIN_TOUCH, PAWN_COLORS } from '@/ui/theme';
+import { MIN_TOUCH, PAWN_COLORS, useThemedStyles, type Theme } from '@/ui/theme';
 
 const KINDS: SeatKind[] = ['human', 'bot', 'empty'];
+
+const makeStyles = (colors: Theme) => ({
+  label: { fontSize: 16, fontWeight: '700' as const, color: colors.text, marginTop: 4 },
+  seat: { backgroundColor: colors.surface, borderRadius: 12, padding: 12, gap: 8 },
+  seatHeader: { flexDirection: 'row' as const, justifyContent: 'space-between' as const, alignItems: 'center' as const },
+  side: { fontWeight: '700' as const, color: colors.text },
+  swatch: { width: MIN_TOUCH, height: MIN_TOUCH, borderRadius: MIN_TOUCH / 2, borderWidth: 2, borderColor: '#fff' },
+  input: {
+    minHeight: MIN_TOUCH,
+    borderWidth: 1,
+    borderColor: colors.muted,
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    color: colors.text,
+    fontSize: 16,
+  },
+  rule: { gap: 6 },
+  ruleLabel: { color: colors.text, fontWeight: '600' as const },
+  problem: { color: colors.danger, fontWeight: '600' as const },
+});
 
 export function SetupScreen() {
   const { t } = useTranslation();
   const router = useRouter();
+  const { theme, styles } = useThemedStyles(makeStyles);
   const saved = useGame((s) => s.saved);
   const [count, setCount] = useState<PlayerCount>(2);
   const [seats, setSeats] = useState<SeatConfig[]>(() => presetSeats(2));
@@ -92,6 +113,7 @@ export function SetupScreen() {
                 onChangeText={(name) => update(i, { name })}
                 accessibilityLabel={t('setup.name', { side })}
                 maxLength={20}
+                placeholderTextColor={theme.muted}
                 style={styles.input}
               />
             )}
@@ -138,23 +160,3 @@ export function SetupScreen() {
     </Screen>
   );
 }
-
-const styles = StyleSheet.create({
-  label: { fontSize: 16, fontWeight: '700', color: colors.text, marginTop: 4 },
-  seat: { backgroundColor: colors.surface, borderRadius: 12, padding: 12, gap: 8 },
-  seatHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  side: { fontWeight: '700', color: colors.text },
-  swatch: { width: MIN_TOUCH, height: MIN_TOUCH, borderRadius: MIN_TOUCH / 2, borderWidth: 2, borderColor: '#fff' },
-  input: {
-    minHeight: MIN_TOUCH,
-    borderWidth: 1,
-    borderColor: colors.muted,
-    borderRadius: 8,
-    paddingHorizontal: 10,
-    color: colors.text,
-    fontSize: 16,
-  },
-  rule: { gap: 6 },
-  ruleLabel: { color: colors.text, fontWeight: '600' },
-  problem: { color: colors.danger, fontWeight: '600' },
-});

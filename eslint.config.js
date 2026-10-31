@@ -1,6 +1,7 @@
 // https://docs.expo.dev/guides/using-eslint/
 const { defineConfig } = require('eslint/config');
 const expoConfig = require('eslint-config-expo/flat');
+const i18next = require('eslint-plugin-i18next');
 
 // Platform and UI packages the pure layers must never import (R-TECH-02, R-TECH-03).
 const PLATFORM_IMPORTS = [
@@ -44,6 +45,23 @@ module.exports = defineConfig([
           ],
         },
       ],
+    },
+  },
+  {
+    // Jest mock factories must use require().
+    files: ['**/__tests__/**'],
+    rules: {
+      '@typescript-eslint/no-require-imports': 'off',
+      'import/no-named-as-default-member': 'off',
+    },
+  },
+  {
+    // All user-facing text comes from translation files (R-I18N-01).
+    files: ['src/app/**/*.tsx', 'src/ui/**/*.tsx'],
+    ignores: ['**/__tests__/**', '**/testing/**'],
+    plugins: { i18next },
+    rules: {
+      'i18next/no-literal-string': ['error', { mode: 'jsx-text-only' }],
     },
   },
   {

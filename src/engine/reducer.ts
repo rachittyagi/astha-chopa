@@ -1,4 +1,4 @@
-import { HOME_INDEX } from './board';
+import { HOME_INDEX, squareAt } from './board';
 import { reconcileDoubles } from './doubles';
 import { resolveMove } from './legal';
 import { activeSeats, pawnsOf, seatOf } from './occupancy';
@@ -67,7 +67,12 @@ function applyMove(draft: GameState, move: Move, events: GameEvent[]): void {
   if (move.action.type === 'Enter') {
     events.push({ type: 'PawnEntered', pawnId: move.pawnIds[0]!, square: move.path[0]! });
   } else {
-    events.push({ type: 'PawnMoved', pawnIds: move.pawnIds, squares: move.path });
+    events.push({
+      type: 'PawnMoved',
+      pawnIds: move.pawnIds,
+      from: squareAt(seat.id, move.from!),
+      squares: move.path,
+    });
   }
 
   if (move.hits.length > 0) {

@@ -42,7 +42,7 @@ scripts/
 .maestro/                 E2E flows
 ```
 
-Libraries: expo-router, react-native-svg, react-native-reanimated, react-native-gesture-handler, zustand, react-native-mmkv (+ @react-native-async-storage/async-storage fallback), expo-audio, expo-haptics, expo-font, expo-localization, i18next + react-i18next, expo-dev-client. Test: Jest (jest-expo for app), @testing-library/react-native, Maestro. Lint: ESLint + `import/no-restricted-paths` zones.
+Libraries: expo-router, zustand, react-native-mmkv (+ @react-native-async-storage/async-storage fallback), expo-audio, expo-haptics, expo-font, expo-localization, i18next + react-i18next, expo-dev-client. Test: Jest (jest-expo for app), @testing-library/react-native, Maestro. Lint: ESLint + `import/no-restricted-paths` zones.
 
 ## API & Data Impacts
 
@@ -193,7 +193,7 @@ Covers: REQ-21, REQ-4
 Covers: REQ-10, REQ-12
 
 ### DES-12 App store and animation queue
-`store/game.ts` (zustand): holds `state`, `selectedThrowId`, an `events` queue and `isAnimating`. `dispatch(action)` → engine → persist → append events. The board consumes events one by one (Reanimated) and marks them done; input for the current human is accepted as soon as the engine says the action is legal, never waiting on non-blocking animations (R-UX-05). Bot driver: a `useEffect` that, when `currentSeat` is a bot and the queue is drained, waits 600–1000 ms (from botRng) and dispatches. Fast speed halves durations; automatic Fast when no human is unfinished.
+`store/game.ts` (zustand): holds `state`, `selectedThrowId`, an `events` queue and `isAnimating`. `dispatch(action)` → engine → persist → append events. The board consumes events one by one (React Native `Animated`, no Reanimated dependency) and marks them done; input for the current human is accepted as soon as the engine says the action is legal, never waiting on non-blocking animations (R-UX-05). Bot driver: a `useEffect` that, when `currentSeat` is a bot and the queue is drained, waits 600–1000 ms (from botRng) and dispatches. Fast speed halves durations; automatic Fast when no human is unfinished.
 Covers: REQ-10, REQ-16, REQ-17
 
 ### DES-13 Persistence
@@ -217,7 +217,7 @@ Every Pressable gets `accessibilityLabel` built from i18n templates (`a11y.pawn`
 Covers: REQ-18
 
 ### DES-18 Localisation and app name
-`src/config/app.json` holds the name (the Expo config loader cannot import TS modules); `app.config.ts` reads it for `name`, and `src/config/app.ts` re-exports `APP_NAME` for splash and title. i18next with `en.json`, `hi.json`, language from settings or `expo-localization`. ESLint rule `i18next/no-literal-string` on `src/ui` and `src/app`. Noto Sans Devanagari bundled as fallback font family in every theme.
+`src/config/app.json` holds the name (the Expo config loader cannot import TS modules); `app.config.ts` reads it for `name`, and `src/config/app.ts` re-exports `APP_NAME` for splash and title. i18next with `en.json`, `hi.json`, language from settings or `expo-localization`. ESLint rule `i18next/no-literal-string` on `src/ui` and `src/app`. Themes use the platform system fonts, which include Devanagari on iOS and Android, so no font is bundled.
 Covers: REQ-19
 
 ### DES-19 Offline, permissions and privacy

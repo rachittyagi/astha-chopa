@@ -76,7 +76,8 @@ export interface Move {
 export type GameEvent =
   | { type: 'ThrowResolved'; seat: SeatId; throw: Throw }
   | { type: 'PawnEntered'; pawnId: string; square: Square }
-  | { type: 'PawnMoved'; pawnIds: string[]; squares: Square[] }
+  /** `from` is the starting square; `squares` are the squares visited, ending on the landing square. */
+  | { type: 'PawnMoved'; pawnIds: string[]; from: Square; squares: Square[] }
   | { type: 'PawnHit'; pawnId: string; by: SeatId }
   | { type: 'DoubleFormed'; owner: SeatId; square: Square }
   | { type: 'DoubleBroken'; owner: SeatId; square: Square }

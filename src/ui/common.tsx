@@ -1,10 +1,53 @@
 import type { ReactNode } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, Switch, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { colors, MIN_TOUCH } from './theme';
+import { MIN_TOUCH, useThemedStyles, type Theme } from './theme';
+
+const makeStyles = (c: Theme) => ({
+  screen: { flex: 1, backgroundColor: c.background },
+  content: { padding: 16, gap: 12 },
+  fill: { flex: 1 },
+  title: { fontSize: 26, fontWeight: '700' as const, color: c.text },
+  body: { fontSize: 16, color: c.text, lineHeight: 22 },
+  muted: { fontSize: 14, color: c.muted },
+  button: {
+    minHeight: MIN_TOUCH + 4,
+    borderRadius: 12,
+    paddingHorizontal: 20,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+  },
+  primary: { backgroundColor: c.accent },
+  secondary: { backgroundColor: c.surface, borderWidth: 2, borderColor: c.accent },
+  dim: { opacity: 0.5 },
+  buttonText: { fontSize: 17, fontWeight: '600' as const, textAlign: 'center' as const },
+  primaryText: { color: c.onAccent },
+  secondaryText: { color: c.accent },
+  segmented: { flexDirection: 'row' as const, flexWrap: 'wrap' as const, gap: 6 },
+  segment: {
+    minHeight: MIN_TOUCH,
+    paddingHorizontal: 12,
+    borderRadius: 10,
+    borderWidth: 1.5,
+    borderColor: c.accent,
+    justifyContent: 'center' as const,
+    backgroundColor: c.surface,
+  },
+  segmentSelected: { backgroundColor: c.accent },
+  segmentText: { color: c.accent, fontWeight: '600' as const },
+  segmentTextSelected: { color: c.onAccent },
+  toggle: {
+    minHeight: MIN_TOUCH,
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    justifyContent: 'space-between' as const,
+    gap: 12,
+  },
+});
 
 export function Screen({ children, scroll = false }: { children: ReactNode; scroll?: boolean }) {
+  const { styles } = useThemedStyles(makeStyles);
   return (
     <SafeAreaView style={styles.screen}>
       {scroll ? (
@@ -27,6 +70,7 @@ export function Button({
   variant?: 'primary' | 'secondary';
   disabled?: boolean;
 }) {
+  const { styles } = useThemedStyles(makeStyles);
   const primary = variant === 'primary';
   return (
     <Pressable
@@ -60,6 +104,7 @@ export function Segmented<T extends string | boolean>({
   onChange(option: T): void;
   accessibilityLabel?: string;
 }) {
+  const { styles } = useThemedStyles(makeStyles);
   return (
     <View style={styles.segmented} accessibilityRole="radiogroup" accessibilityLabel={accessibilityLabel}>
       {options.map((option) => {
@@ -80,7 +125,24 @@ export function Segmented<T extends string | boolean>({
   );
 }
 
+export function Toggle({ label, value, onChange }: { label: string; value: boolean; onChange(v: boolean): void }) {
+  const { theme, styles } = useThemedStyles(makeStyles);
+  return (
+    <View style={styles.toggle}>
+      <Text style={styles.body}>{label}</Text>
+      <Switch
+        value={value}
+        onValueChange={onChange}
+        accessibilityLabel={label}
+        trackColor={{ true: theme.accent, false: theme.muted }}
+        thumbColor={theme.surface}
+      />
+    </View>
+  );
+}
+
 export function Title({ children }: { children: ReactNode }) {
+  const { styles } = useThemedStyles(makeStyles);
   return (
     <Text style={styles.title} accessibilityRole="header">
       {children}
@@ -88,35 +150,7 @@ export function Title({ children }: { children: ReactNode }) {
   );
 }
 
-const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: colors.background },
-  content: { padding: 16, gap: 12 },
-  fill: { flex: 1 },
-  title: { fontSize: 26, fontWeight: '700', color: colors.text },
-  button: {
-    minHeight: MIN_TOUCH + 4,
-    borderRadius: 12,
-    paddingHorizontal: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  primary: { backgroundColor: colors.accent },
-  secondary: { backgroundColor: colors.surface, borderWidth: 2, borderColor: colors.accent },
-  dim: { opacity: 0.5 },
-  buttonText: { fontSize: 17, fontWeight: '600' },
-  primaryText: { color: colors.onAccent },
-  secondaryText: { color: colors.accent },
-  segmented: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
-  segment: {
-    minHeight: MIN_TOUCH,
-    paddingHorizontal: 12,
-    borderRadius: 10,
-    borderWidth: 1.5,
-    borderColor: colors.accent,
-    justifyContent: 'center',
-    backgroundColor: colors.surface,
-  },
-  segmentSelected: { backgroundColor: colors.accent },
-  segmentText: { color: colors.accent, fontWeight: '600' },
-  segmentTextSelected: { color: colors.onAccent },
-});
+export function Body({ children, muted = false }: { children: ReactNode; muted?: boolean }) {
+  const { styles } = useThemedStyles(makeStyles);
+  return <Text style={muted ? styles.muted : styles.body}>{children}</Text>;
+}

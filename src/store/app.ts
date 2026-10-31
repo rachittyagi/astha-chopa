@@ -1,4 +1,5 @@
 // The app's store instances, backed by device storage. Tests build their own with the factories.
+import { getLocales } from 'expo-localization';
 import { useStore } from 'zustand';
 
 import { deviceStore } from '@/services/storage';
@@ -12,7 +13,9 @@ export const gameStore = createGameStore({
   newSeed: () => Math.floor(Math.random() * 0xffffffff),
 });
 
-export const settingsStore = createSettingsStore(deviceStore());
+export const settingsStore = createSettingsStore(deviceStore(), () =>
+  getLocales()[0]?.languageCode === 'hi' ? 'hi' : 'en',
+);
 
 export function useGame<T>(select: (s: GameStore) => T): T {
   return useStore(gameStore, select);

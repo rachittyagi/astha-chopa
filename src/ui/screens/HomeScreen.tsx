@@ -1,15 +1,24 @@
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
-import { StyleSheet, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 
 import { APP_NAME } from '@/config/app';
 import { gameStore, useGame } from '@/store/app';
 import { Button, Screen } from '@/ui/common';
-import { colors } from '@/ui/theme';
+import { useThemedStyles, type Theme } from '@/ui/theme';
+
+const makeStyles = (c: Theme) => ({
+  hero: { flex: 1, alignItems: 'center' as const, justifyContent: 'center' as const, gap: 8 },
+  title: { fontSize: 40, fontWeight: '800' as const, color: c.accent, textAlign: 'center' as const },
+  subtitle: { fontSize: 15, color: c.muted, textAlign: 'center' as const },
+  notice: { color: c.danger, textAlign: 'center' as const },
+  actions: { gap: 12, paddingBottom: 24, width: '100%' as const, maxWidth: 480, alignSelf: 'center' as const },
+});
 
 export function HomeScreen() {
   const { t } = useTranslation();
   const router = useRouter();
+  const { styles } = useThemedStyles(makeStyles);
   const saved = useGame((s) => s.saved);
   const problem = useGame((s) => s.saveProblem);
 
@@ -19,6 +28,7 @@ export function HomeScreen() {
         <Text style={styles.title} accessibilityRole="header">
           {APP_NAME}
         </Text>
+        <Text style={styles.subtitle}>{t('home.tagline')}</Text>
       </View>
       {problem && (
         <Text style={styles.notice} onPress={() => gameStore.getState().dismissSaveProblem()}>
@@ -45,10 +55,3 @@ export function HomeScreen() {
     </Screen>
   );
 }
-
-const styles = StyleSheet.create({
-  hero: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  title: { fontSize: 40, fontWeight: '800', color: colors.accent },
-  notice: { color: colors.danger, textAlign: 'center' },
-  actions: { gap: 12, paddingBottom: 24 },
-});

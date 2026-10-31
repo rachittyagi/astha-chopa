@@ -1,5 +1,3 @@
-import { ComingSoonScreen } from '@/ui/screens/ComingSoonScreen';
+import { HowToPlayScreen } from '@/ui/screens/HowToPlayScreen';
 
-export default function HowToPlay() {
-  return <ComingSoonScreen section="howToPlay" />;
-}
+export default HowToPlayScreen;

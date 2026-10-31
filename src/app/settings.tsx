@@ -1,5 +1,3 @@
-import { ComingSoonScreen } from '@/ui/screens/ComingSoonScreen';
+import { SettingsScreen } from '@/ui/screens/SettingsScreen';
 
-export default function SettingsRoute() {
-  return <ComingSoonScreen section="settings" />;
-}
+export default SettingsScreen;

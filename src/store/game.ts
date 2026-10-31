@@ -55,6 +55,8 @@ export interface GameStore {
   /** Leave the game screen; the game stays saved. */
   quit(): void;
   dismissSaveProblem(): void;
+  /** Settings → Reset saved game. */
+  discardSaved(): Promise<void>;
 }
 
 export function createGameStore({ storage, now, newSeed }: GameStoreDeps) {
@@ -141,6 +143,10 @@ export function createGameStore({ storage, now, newSeed }: GameStoreDeps) {
       consumeEvents: (n) => set((s) => ({ events: s.events.slice(n) })),
       quit: () => set({ game: null, events: [], selectedThrowId: null, selectedPawnId: null }),
       dismissSaveProblem: () => set({ saveProblem: null }),
+      async discardSaved() {
+        set({ saved: null });
+        await clearGame(storage);
+      },
     };
   });
 }
