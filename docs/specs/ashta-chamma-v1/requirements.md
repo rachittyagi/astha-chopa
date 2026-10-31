@@ -1,6 +1,6 @@
 # Ashta Chamma v1 — Requirements
 
-Source: [PRD](https://claude.ai/artifact/HhbJP3jvt6Be1eW6CPVdHG) (rev 290). `R-*` ids are the PRD's; `AC-*` are its acceptance criteria. Each REQ below groups PRD requirements and states them as testable EARS criteria.
+Source: [PRD](../../prd.md) (rev 290). `R-*` ids are the PRD's; `AC-*` are its acceptance criteria. Each REQ below groups PRD requirements and states them as testable EARS criteria.
 
 ## Summary
 
