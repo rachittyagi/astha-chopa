@@ -8,7 +8,7 @@ export { legalMoves, movesWithValue } from './legal';
 export { isOuterSquare } from './doubles';
 export { checkInvariants } from './invariants';
 export { pawnsAt, squareOf, activeSeats } from './occupancy';
-export { applyAction, LOG_LIMIT } from './reducer';
+export { applyAction, endGameNow, humanStillPlaying, LOG_LIMIT } from './reducer';
 export { createGame, validateSeats, PAWNS_PER_SEAT } from './setup';
 export type { SeatProblem } from './setup';
 export { THROW_ODDS, THROW_VALUES } from './throws';

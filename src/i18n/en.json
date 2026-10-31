@@ -1,0 +1,166 @@
+{
+  "common": {
+    "back": "Back",
+    "cancel": "Cancel",
+    "ok": "OK"
+  },
+  "home": {
+    "play": "Play",
+    "resume": "Resume",
+    "howToPlay": "How to play",
+    "settings": "Settings",
+    "saveUnreadable": "Your saved game couldn't be read, so it was removed.",
+    "saveOldVersion": "Your saved game is from an older version of the app, so it was removed."
+  },
+  "setup": {
+    "title": "New game",
+    "players": "Players",
+    "playersCount": "{{count}}",
+    "seat": {
+      "A": "Bottom",
+      "B": "Right",
+      "C": "Top",
+      "D": "Left"
+    },
+    "kind": {
+      "human": "Human",
+      "bot": "Bot",
+      "empty": "Empty"
+    },
+    "level": {
+      "easy": "Easy",
+      "medium": "Medium",
+      "hard": "Hard"
+    },
+    "colour": "Colour",
+    "name": "Name for {{side}} seat",
+    "rules": "Rules",
+    "classic": "Classic",
+    "custom": "Custom",
+    "start": "Start",
+    "problem": {
+      "tooFewPlayers": "Choose at least 2 players.",
+      "noHuman": "At least one player must be human.",
+      "duplicateColor": "Two seats have the same colour.",
+      "wrongSeatCount": "Something went wrong with the seats."
+    },
+    "replaceTitle": "Replace your saved game?",
+    "replaceBody": "Starting a new game removes the game you haven't finished.",
+    "replace": "Replace"
+  },
+  "colors": {
+    "red": "Red",
+    "green": "Green",
+    "yellow": "Yellow",
+    "blue": "Blue",
+    "purple": "Purple",
+    "orange": "Orange"
+  },
+  "rules": {
+    "entryRule": {
+      "label": "Entering pawns",
+      "onStart": "Pawns start on the board",
+      "needChammaOrAshta": "Need a 4 or 8 to enter a pawn"
+    },
+    "noHitBehavior": {
+      "label": "Before your first hit",
+      "block": "Stop at the end of the outer ring",
+      "circle": "Keep circling the outer ring"
+    },
+    "triplePenalty": {
+      "label": "Three 4s or 8s in a row",
+      "true": "Lose the whole turn",
+      "false": "No penalty"
+    },
+    "doubles": {
+      "label": "Doubles",
+      "true": "Two pawns together block and move together",
+      "false": "Pawns may share a square but never block"
+    },
+    "doubleCrossing": {
+      "label": "Passing a double",
+      "blockOnce": "Blocked for one turn",
+      "free": "Always allowed"
+    },
+    "bonusOnHome": {
+      "label": "Pawn reaches home",
+      "true": "Earns a bonus throw",
+      "false": "No bonus"
+    },
+    "playToEnd": {
+      "label": "When someone wins",
+      "true": "Play on for 2nd and 3rd place",
+      "false": "The game ends"
+    }
+  },
+  "game": {
+    "yourTurn": "Your turn",
+    "botTurn": "{{name}} is playing",
+    "throw": "Throw",
+    "throwAgain": "Throw again",
+    "pause": "Pause",
+    "pool": "Throws to use",
+    "waiting": "Waiting",
+    "home": "Home: {{count}}",
+    "hasHit": "Inner ring open",
+    "noHitYet": "No hit yet",
+    "pickThrow": "Pick a throw, then a pawn",
+    "pickPawn": "Tap a highlighted pawn",
+    "moveOne": "Move one",
+    "moveBoth": "Move both",
+    "endNow": "End now",
+    "event": {
+      "chamma": "Chamma! Throw again",
+      "ashta": "Ashta! Throw again",
+      "hit": "Hit! Bonus throw",
+      "innerRing": "Inner ring unlocked",
+      "noLegalMove": "No legal move",
+      "forfeited": "Turn forfeited: three in a row",
+      "home": "A pawn reached home",
+      "finished": "{{name}} finished in place {{rank}}",
+      "stalemate": "Nobody could move: pawns may now circle"
+    },
+    "a11y": {
+      "pawn": "{{color}} pawn {{n}}, {{where}}",
+      "square": "square {{index}}, {{ring}} ring",
+      "waitingPawn": "waiting to enter",
+      "atHome": "home",
+      "chip": "Throw of {{value}}",
+      "shellUp": "mouth up",
+      "shellDown": "mouth down",
+      "thrown": "{{name}} threw {{value}}",
+      "turn": "{{name}}'s turn"
+    },
+    "ring": {
+      "outer": "outer",
+      "inner": "inner",
+      "home": "home"
+    },
+    "pickEnter": "Tap your waiting pawns to bring one in"
+  },
+  "pause": {
+    "title": "Paused",
+    "resume": "Resume",
+    "restart": "Restart with same setup",
+    "rules": "Rules summary",
+    "quit": "Quit to Home"
+  },
+  "result": {
+    "title": "Results",
+    "place": "{{rank}}.",
+    "playAgain": "Play again",
+    "newGame": "New game",
+    "home": "Home"
+  },
+  "howToPlay": {
+    "title": "How to play",
+    "comingSoon": "Illustrated rules arrive in the next update."
+  },
+  "settings": {
+    "title": "Settings",
+    "comingSoon": "Themes, sound and language settings arrive in the next update."
+  },
+  "debug": {
+    "starting": "Starting a test game with seed {{seed}}"
+  }
+}

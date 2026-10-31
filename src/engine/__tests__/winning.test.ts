@@ -1,4 +1,4 @@
-import { applyAction } from '../reducer';
+import { applyAction, endGameNow, humanStillPlaying } from '../reducer';
 import { act, game, moveAction, place, withHit, withPool } from '../testing/fixtures';
 import type { GameState } from '../types';
 
@@ -65,5 +65,25 @@ describe('finishing and winning (R-WIN-01..03, R-TURN-05)', () => {
   it('bonusOnHome off: reaching home earns nothing', () => {
     const state = withPool(withHit(place(game(), { A0: 22 }), 'A'), [2]);
     expect(act(state, moveAction(state, 'A0', 1)).currentSeat).toBe('C');
+  });
+});
+
+describe('End now (R-UX-04)', () => {
+  it('is refused while a human is still playing', () => {
+    expect(endGameNow(game())).toMatchObject({ ok: false, error: { type: 'WrongPhase' } });
+  });
+
+  it('ranks the remaining bots by progress once every human has finished', () => {
+    const base = game({ seats: ['human', 'bot', 'bot', 'empty'] });
+    const state: GameState = {
+      ...place(base, { A0: 24, A1: 24, A2: 24, A3: 24, B0: 3, C0: 9 }),
+      rankings: ['A'],
+      currentSeat: 'B',
+      seats: base.seats.map((s) => (s.id === 'A' ? { ...s, finishedRank: 1 } : { ...s })),
+    };
+    expect(humanStillPlaying(state)).toBe(false);
+    const result = endGameNow(state);
+    expect(result).toMatchObject({ ok: true, state: { phase: 'finished', rankings: ['A', 'C', 'B'] } });
+    expect(endGameNow((result as { state: GameState }).state).ok).toBe(false);
   });
 });

@@ -27,6 +27,10 @@ const config: ExpoConfig = {
     predictiveBackGestureEnabled: false,
   },
   plugins: ['expo-router'],
+  extra: {
+    // development | preview | release, set by the EAS build profile (eas.json).
+    variant: process.env.APP_VARIANT ?? 'development',
+  },
 };
 
 export default config;

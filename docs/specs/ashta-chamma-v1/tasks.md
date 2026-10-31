@@ -127,40 +127,40 @@ Companion to [requirements.md](requirements.md) and [design.md](design.md). Tick
 
 ## M3 Playable app
 
-- [ ] TASK-39: `store/game.ts` zustand store: dispatch → engine → persist → event queue, selection state
+- [x] TASK-39: `store/game.ts` zustand store: dispatch → engine → persist → event queue, selection state
   Links: DES-12 | REQ-16
   Outcome: store unit tests with a fake persistence service.
-- [ ] TASK-40: Bot driver effect (delay 600–1000 ms from botRng, runs after interactions, writes botRngState back)
+- [x] TASK-40: Bot driver effect (delay 600–1000 ms from botRng, runs after interactions, writes botRngState back)
   Links: DES-12, DES-11 | REQ-10
   Outcome: a 1-human + 1-bot game in a store test advances bot turns without input.
-- [ ] TASK-41: `services/persistence.ts` MMKV with AsyncStorage fallback, capped log, schemaVersion guard, clear on Result
+- [x] TASK-41: `services/persistence.ts` MMKV with AsyncStorage fallback, capped log, schemaVersion guard, clear on Result
   Links: DES-13 | REQ-13
   Outcome: R-TEST-07 round-trip passes; corrupt and old saves return null with a reason.
-- [ ] TASK-42: Settings store persisted separately (theme, sound, haptics, speed, language)
+- [x] TASK-42: Settings store persisted separately (theme, sound, haptics, speed, language)
   Links: DES-13 | REQ-13, REQ-17
   Outcome: settings survive relaunch independently of the game slot.
-- [ ] TASK-43: Home screen (Play, Resume when a save exists, How to play, Settings)
+- [x] TASK-43: Home screen (Play, Resume when a save exists, How to play, Settings)
   Links: DES-14 | REQ-15, REQ-13
   Outcome: Resume appears only with a valid save.
-- [ ] TASK-44: Setup screen: presets 1–4, seat rows (kind, name, colour, bot level), validation messages, Classic/Custom rules with explanations, Replace-save dialog
+- [x] TASK-44: Setup screen: presets 1–4, seat rows (kind, name, colour, bot level), validation messages, Classic/Custom rules with explanations, Replace-save dialog
   Links: DES-14, DES-3, DES-4 | REQ-1, REQ-9, REQ-15
   Outcome: component tests: default names Player 1–4, duplicate colour rejected, Start disabled without a human.
-- [ ] TASK-45: Board, pawns and waiting areas (SVG, X marks, basic theme, count badges)
+- [x] TASK-45: Board, pawns and waiting areas (SVG, X marks, basic theme, count badges)
   Links: DES-15 | REQ-16, REQ-17
   Outcome: renders any GameState; snapshot tests for start and mid-game states.
-- [ ] TASK-46: Shells, throw button, pool chips (pre-select single value), turn banner, seat panels (name, pawns home, hit flag)
+- [x] TASK-46: Shells, throw button, pool chips (pre-select single value), turn banner, seat panels (name, pawns home, hit flag)
   Links: DES-15 | REQ-16
   Outcome: component tests for chip pre-selection and banner content.
-- [ ] TASK-47: `useMoveSelection` hook (chip-first or pawn-first, highlights, destination preview, entry via waiting area) and Move one / Move both prompt
+- [x] TASK-47: `useMoveSelection` hook (chip-first or pawn-first, highlights, destination preview, entry via waiting area) and Move one / Move both prompt
   Links: DES-15 | REQ-16
   Outcome: hook unit tests on engine fixtures; only legal pawns highlighted.
-- [ ] TASK-48: Pause menu (Resume, Restart same setup, Rules summary, Quit to Home) and Result screen (ranking, Play again with new seed, New game, Home)
+- [x] TASK-48: Pause menu (Resume, Restart same setup, Rules summary, Quit to Home) and Result screen (ranking, Play again with new seed, New game, Home)
   Links: DES-14 | REQ-15
   Outcome: flows reachable; Quit keeps the save, Result clears it.
-- [ ] TASK-49: End now when no human is unfinished (rank bots by progress, go to Result)
+- [x] TASK-49: End now when no human is unfinished (rank bots by progress, go to Result)
   Links: DES-14 | REQ-15
   Outcome: store test with 1 human finished vs 3 bots shows End now and produces a full ranking.
-- [ ] TASK-50: Debug seed deep link in development/preview builds
+- [x] TASK-50: Debug seed deep link in development/preview builds
   Links: DES-20 | REQ-21
   Outcome: `astha://debug/new?seed=42` starts a deterministic game; absent in release config.
 

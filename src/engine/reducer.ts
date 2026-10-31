@@ -1,9 +1,9 @@
 import { HOME_INDEX } from './board';
 import { reconcileDoubles } from './doubles';
 import { resolveMove } from './legal';
-import { pawnsOf, seatOf } from './occupancy';
+import { activeSeats, pawnsOf, seatOf } from './occupancy';
 import { drawThrow, isExtraThrow } from './throws';
-import { endTurn, playerFinished, settle } from './turn';
+import { endTurn, finishGame, playerFinished, settle } from './turn';
 import type {
   Action,
   ApplyResult,
@@ -94,6 +94,24 @@ function applyMove(draft: GameState, move: Move, events: GameEvent[]): void {
     }
   }
   settle(draft, events);
+}
+
+/** True while some human seat is still taking turns. */
+export function humanStillPlaying(state: GameState): boolean {
+  return activeSeats(state).some((s) => s.kind === 'human');
+}
+
+/**
+ * End now (R-UX-04): once no human is left in play, rank the remaining bots by progress
+ * and finish the game instead of watching them play it out.
+ */
+export function endGameNow(state: GameState): ApplyResult {
+  if (state.phase === 'finished') return fail('WrongPhase', 'The game is over.');
+  if (humanStillPlaying(state)) return fail('WrongPhase', 'A human player is still in the game.');
+  const draft = draftOf(state);
+  const events: GameEvent[] = [];
+  finishGame(draft, events);
+  return { ok: true, state: draft, events };
 }
 
 /** The engine's only state transition: a new state plus events, or a typed error (PRD 8.2). */

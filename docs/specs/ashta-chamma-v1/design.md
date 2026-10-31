@@ -189,7 +189,7 @@ Covers: REQ-21, REQ-4
 - Medium: score = weights from `weights.ts` per the PRD heuristic table; `danger.ts` computes, for the landing square, the chance an opponent can hit next turn by a single throw (odds from R-THROW-03, respecting their hit flag, safe squares and doubles).
 - Hard: Medium score minus expected loss from the lookahead over every opponent's next throw; for pools of 2–3 throws it also searches throw orders (keeping the best 3 moves per step) and plays the first step of the best sequence. Constants in `src/bot/weights.ts`. Measured in Node: Medium ≈ 0.07 ms and Hard ≈ 0.11 ms per decision on average, worst under 10 ms.
 - Tie-break: furthest pawn, then lowest pawn id.
-- Performance: budget-checked with a micro-benchmark in tests (≤ 20 ms in Node as a proxy for the 200 ms device target); the store runs it after `InteractionManager.runAfterInteractions` so animation frames are not blocked.
+- Performance: budget-checked with a micro-benchmark in tests (≤ 20 ms in Node as a proxy for the 200 ms device target); the store runs it from the bot's delay timer (React Native 0.88 removed `InteractionManager`); decisions take well under 10 ms.
 Covers: REQ-10, REQ-12
 
 ### DES-12 App store and animation queue
