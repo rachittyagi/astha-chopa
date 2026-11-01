@@ -1,7 +1,7 @@
 import { Redirect, useRouter } from 'expo-router';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
-import { AccessibilityInfo, Modal, Text, useWindowDimensions, View } from 'react-native';
+import { AccessibilityInfo, Alert, Modal, ScrollView, Text, useWindowDimensions, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { botDelay } from '@/bot';
@@ -11,7 +11,7 @@ import { gameStore, settingsStore, useGame, useSettings } from '@/store/app';
 import { Button, Title } from '@/ui/common';
 import { Board } from '@/ui/game/Board';
 import { Celebration } from '@/ui/game/Celebration';
-import { MoveChoice, PoolChips, SeatMark, Shells, TurnBanner } from '@/ui/game/Controls';
+import { MoveChoice, PoolChips, SeatMark, seatStatus, SeatStatus, Shells, TurnBanner } from '@/ui/game/Controls';
 import { messageFor, throwPhrase } from '@/ui/game/messages';
 import { durations, motionsFor, type Motion } from '@/ui/game/motion';
 import { selectionView, tapPawn, tapThrow, tapWaiting, type SelectionView, type TapOutcome } from '@/ui/game/selection';
@@ -22,7 +22,12 @@ const CALLOUT_MS = 1800;
 const READ_PAUSE_MS = 900;
 /** Tablets in landscape get a seat at each side of the board (R-LOCAL-04). */
 const TABLET_MIN_WIDTH = 900;
-const SIDE_PANEL = 170;
+/** Height of a tablet seat panel at normal text size; it grows with the system font scale. */
+const SIDE_PANEL = 180;
+/** The phone board never shrinks below this; past it the screen scrolls instead (R-A11Y-03). */
+const MIN_BOARD = 260;
+/** Large-button height: the throw slot keeps it even when empty, so the board never jumps. */
+const ACTION_SLOT = 72;
 
 /**
  * Plays bot turns after a 600–1000 ms pause (R-BOT-02), halved at Fast speed or with no human left.
@@ -142,7 +147,11 @@ function useEventFeedback() {
 
 const makeStyles = (c: Theme) => ({
   safe: { flex: 1, backgroundColor: c.background },
-  phone: { flex: 1, padding: 12, gap: 12 },
+  phone: { flexGrow: 1, padding: 12, gap: 12 },
+  boardSlot: { flex: 1, alignItems: 'center' as const, justifyContent: 'center' as const },
+  controls: { gap: 10 },
+  chipSlot: { minHeight: 60 },
+  actionSlot: { minHeight: ACTION_SLOT, justifyContent: 'center' as const },
   top: { flexDirection: 'row' as const, alignItems: 'center' as const, gap: 8 },
   flex: { flex: 1 },
   center: { alignItems: 'center' as const, justifyContent: 'center' as const },
@@ -154,7 +163,7 @@ const makeStyles = (c: Theme) => ({
     borderRadius: 12,
   },
   calloutText: { color: c.onOverlay, fontSize: 20, fontWeight: '700' as const, textAlign: 'center' as const },
-  hint: { color: c.text, fontSize: 18 },
+  hint: { color: c.text, fontSize: 18, lineHeight: 24 },
   overlay: { flex: 1, backgroundColor: c.overlay, justifyContent: 'center' as const, padding: 24 },
   sheet: {
     backgroundColor: c.surface,
@@ -170,18 +179,20 @@ const makeStyles = (c: Theme) => ({
   column: { alignItems: 'center' as const, justifyContent: 'center' as const, gap: 8 },
   side: {
     padding: 10,
-    gap: 8,
-    flexDirection: 'row' as const,
-    flexWrap: 'wrap' as const,
-    alignItems: 'center' as const,
-    alignContent: 'center' as const,
     borderRadius: 14,
     backgroundColor: c.surface,
     borderWidth: 2,
     borderColor: 'transparent',
   },
   sideCurrent: { borderColor: c.accent },
-  sideName: { color: c.text, fontSize: 18, fontWeight: '700' as const },
+  sideContent: { flexGrow: 1, flexDirection: 'row' as const, gap: 12 },
+  sideInfo: { flex: 3, gap: 4 },
+  sideActions: { flex: 2, gap: 8, justifyContent: 'center' as const },
+  sideHint: { color: c.text, fontSize: 15, lineHeight: 20 },
+  sideHead: { flexDirection: 'row' as const, alignItems: 'center' as const, gap: 8 },
+  sideName: { flexShrink: 1, color: c.text, fontSize: 18, fontWeight: '700' as const },
+  sideStatus: { color: c.muted, fontSize: 14 },
+  confirm: { color: c.text, fontSize: 17, lineHeight: 24 },
   tabletCorner: { position: 'absolute' as const, top: 12, right: 12, gap: 8 },
 });
 
@@ -200,11 +211,35 @@ interface TurnControlsProps {
   rolling: boolean;
   styles: Styles;
   onTap(outcome: TapOutcome): void;
+  /** Tablet side panels: smaller shells, and no reserved space (the panel has a fixed size). */
+  compact?: boolean;
+  /** Shown in the throw button's place when nobody human is left to throw (End now). */
+  idleAction?: ReactNode;
+  /** Compact only: the seat's name and status, shown above the shells. */
+  header?: ReactNode;
 }
 
-/** Shells, pool chips, hint and the throw button for the player whose turn it is. */
-function TurnControls({ game, seat, human, canAct, view, lastThrow, rollMs, rolling, styles, onTap }: TurnControlsProps) {
+/**
+ * Shells, pool chips, hint and the throw button for the player whose turn it is. On phones each
+ * part keeps its height whether or not it has anything to show, so the board above stays put.
+ */
+function TurnControls({
+  game,
+  seat,
+  human,
+  canAct,
+  view,
+  lastThrow,
+  rollMs,
+  rolling,
+  styles,
+  onTap,
+  compact = false,
+  idleAction,
+  header,
+}: TurnControlsProps) {
   const { t } = useTranslation();
+  const { fontScale } = useWindowDimensions();
   const selectedPawnId = useGame((s) => s.selectedPawnId);
   const hint =
     game.phase === 'moving' && canAct
@@ -214,27 +249,55 @@ function TurnControls({ game, seat, human, canAct, view, lastThrow, rollMs, roll
           ? t('game.pickEnter')
           : t('game.pickPawn')
       : null;
+  const shells = <Shells thrown={lastThrow ?? undefined} rollMs={rollMs} size={compact ? 36 : 48} />;
+  const chips = game.phase === 'moving' && (
+    <PoolChips
+      pool={rolling ? game.pool.filter((p) => p.id !== lastThrow?.id) : game.pool}
+      playable={view.playableThrowIds}
+      active={view.activeThrowId}
+      onPress={(id) => onTap(tapThrow(game, id, selectedPawnId))}
+    />
+  );
+  // Two lines are kept for the hint, so a longer one does not push the controls down.
+  const hintText = (
+    <Text style={compact ? styles.sideHint : [styles.hint, { minHeight: 2 * 24 * fontScale }]} numberOfLines={2}>
+      {hint ?? ''}
+    </Text>
+  );
+  const action =
+    human && game.phase === 'throwing' ? (
+      <Button
+        label={game.pool.length > 0 && !rolling ? t('game.throwAgain') : t('game.throw')}
+        size={compact ? 'normal' : 'large'}
+        disabled={rolling}
+        onPress={() => gameStore.getState().dispatch({ type: 'Throw', seat: seat.id })}
+      />
+    ) : (
+      idleAction
+    );
+
+  if (compact) {
+    return (
+      <>
+        <View style={styles.sideInfo}>
+          {header}
+          {shells}
+          {hint && hintText}
+        </View>
+        <View style={styles.sideActions}>
+          {chips}
+          {action}
+        </View>
+      </>
+    );
+  }
   return (
-    <>
-      <Shells thrown={lastThrow ?? undefined} rollMs={rollMs} />
-      {game.phase === 'moving' && (
-        <PoolChips
-          pool={rolling ? game.pool.filter((p) => p.id !== lastThrow?.id) : game.pool}
-          playable={view.playableThrowIds}
-          active={view.activeThrowId}
-          onPress={(id) => onTap(tapThrow(game, id, selectedPawnId))}
-        />
-      )}
-      {hint && <Text style={styles.hint}>{hint}</Text>}
-      {human && game.phase === 'throwing' && (
-        <Button
-          label={game.pool.length > 0 && !rolling ? t('game.throwAgain') : t('game.throw')}
-          size="large"
-          disabled={rolling}
-          onPress={() => gameStore.getState().dispatch({ type: 'Throw', seat: seat.id })}
-        />
-      )}
-    </>
+    <View style={styles.controls}>
+      {shells}
+      <View style={styles.chipSlot}>{chips}</View>
+      {hintText}
+      <View style={styles.actionSlot}>{action}</View>
+    </View>
   );
 }
 
@@ -252,7 +315,7 @@ function GameView() {
   const { t } = useTranslation();
   const router = useRouter();
   const { styles } = useThemedStyles(makeStyles);
-  const { width, height } = useWindowDimensions();
+  const { width, height, fontScale } = useWindowDimensions();
   const game = useGame((s) => s.game);
   const setup = useGame((s) => s.setup);
   const selectedThrowId = useGame((s) => s.selectedThrowId);
@@ -261,6 +324,9 @@ function GameView() {
   const [choice, setChoice] = useState<Extract<TapOutcome, { kind: 'choose' }> | null>(null);
   const [paused, setPaused] = useState(false);
   const [showRules, setShowRules] = useState(false);
+  const [confirmRestart, setConfirmRestart] = useState(false);
+  // Height left for the board on phones, measured once the banner, status and controls are laid out.
+  const [slot, setSlot] = useState<number | null>(null);
 
   // Bot-only play runs at Fast automatically (R-UX-04).
   const fast = speedFast || (!!game && !humanStillPlaying(game));
@@ -303,9 +369,12 @@ function GameView() {
     }
   };
 
+  // Seat panels grow with large text, up to half again at 150% (R-A11Y-03).
+  const sidePanel = Math.round(SIDE_PANEL * (1 + Math.min(0.5, Math.max(0, fontScale - 1))));
+  const phoneMax = width - 24;
   const boardSize = tablet
-    ? Math.min(height - 2 * SIDE_PANEL - 40, width - 2 * SIDE_PANEL - 40)
-    : Math.min(width - 24, height * 0.52);
+    ? Math.min(height - 2 * sidePanel - 40, width - 2 * sidePanel - 40)
+    : Math.min(phoneMax, Math.max(Math.min(phoneMax, MIN_BOARD), slot ?? height * 0.45));
   const board = (
     <View style={styles.center}>
       <Board
@@ -326,7 +395,15 @@ function GameView() {
       )}
     </View>
   );
-  const controls = (
+  const endGameNow = () =>
+    Alert.alert(t('game.endNowTitle'), t('game.endNowBody'), [
+      { text: t('common.cancel'), style: 'cancel' },
+      { text: t('game.endNowConfirm'), style: 'destructive', onPress: () => store.endNow() },
+    ]);
+  const endNow = !humanStillPlaying(game) && game.phase !== 'finished' && (
+    <Button label={t('game.endNow')} onPress={endGameNow} variant="secondary" />
+  );
+  const controls = (compact: boolean, header?: ReactNode) => (
     <TurnControls
       game={game}
       seat={seat}
@@ -338,10 +415,10 @@ function GameView() {
       rolling={rolling}
       styles={styles}
       onTap={handle}
+      compact={compact}
+      idleAction={compact ? undefined : endNow}
+      header={header}
     />
-  );
-  const endNow = !humanStillPlaying(game) && game.phase !== 'finished' && (
-    <Button label={t('game.endNow')} onPress={() => store.endNow()} variant="secondary" />
   );
   const pauseButton = <Button label={t('game.pause')} onPress={() => setPaused(true)} variant="secondary" />;
 
@@ -349,6 +426,18 @@ function GameView() {
   const side = (id: Seat['id'], rotate: string, w: number, h: number) => {
     const s = game.seats.find((x) => x.id === id)!;
     const current = s.id === game.currentSeat;
+    const status = seatStatus(game, s, t);
+    const header = (
+      <View accessible accessibilityLabel={status.label}>
+        <View style={styles.sideHead}>
+          <SeatMark seat={s.id} color={s.color} />
+          <Text style={styles.sideName} numberOfLines={1}>
+            {s.name}
+          </Text>
+        </View>
+        <Text style={styles.sideStatus}>{[status.homeText, status.ring?.text].filter(Boolean).join(' · ')}</Text>
+      </View>
+    );
     const vertical = rotate === '90deg' || rotate === '-90deg';
     return (
       <View style={{ width: vertical ? h : w, height: vertical ? w : h }}>
@@ -367,9 +456,9 @@ function GameView() {
               },
             ]}
           >
-            <SeatMark seat={s.id} color={s.color} />
-            <Text style={styles.sideName}>{s.name}</Text>
-            {current && controls}
+            <ScrollView contentContainerStyle={styles.sideContent}>
+              {current ? controls(true, header) : <View style={styles.sideInfo}>{header}</View>}
+            </ScrollView>
           </View>
         )}
       </View>
@@ -391,47 +480,61 @@ function GameView() {
         }}
         onCancel={() => setChoice(null)}
       />
-      <Modal transparent visible={paused} animationType="fade" onRequestClose={() => setPaused(false)}>
+      <Modal
+        transparent
+        visible={paused}
+        animationType="fade"
+        onRequestClose={() => (confirmRestart ? setConfirmRestart(false) : setPaused(false))}
+      >
         <View style={styles.overlay}>
-          <View style={styles.sheet}>
-            <Title>{t('pause.title')}</Title>
-            <Button label={t('pause.resume')} onPress={() => setPaused(false)} />
-            <Button
-              label={t('pause.restart')}
-              variant="secondary"
-              onPress={() => {
-                if (setup) store.startGame(setup);
-                setPaused(false);
-              }}
-            />
-            <Button label={t('pause.rules')} variant="secondary" onPress={() => setShowRules((v) => !v)} />
-            {showRules &&
-              RULE_KEYS.map((key) => (
-                <Text key={key} style={styles.rule}>
-                  {t('pause.ruleLine', {
-                    label: t(`rules.${key}.label`),
-                    value: t(`rules.${key}.${String(game.ruleConfig[key])}`),
-                  })}
-                </Text>
-              ))}
-            <Button
-              label={t('howToPlay.title')}
-              variant="secondary"
-              onPress={() => {
-                setPaused(false);
-                router.push('/how-to-play');
-              }}
-            />
-            <Button
-              label={t('pause.quit')}
-              variant="secondary"
-              onPress={() => {
-                setPaused(false);
-                store.quit();
-                router.replace('/');
-              }}
-            />
-          </View>
+          {confirmRestart ? (
+            <View style={styles.sheet}>
+              <Title>{t('pause.restartTitle')}</Title>
+              <Text style={styles.confirm}>{t('pause.restartBody')}</Text>
+              <Button
+                label={t('pause.restartConfirm')}
+                onPress={() => {
+                  if (setup) store.startGame(setup);
+                  setConfirmRestart(false);
+                  setPaused(false);
+                }}
+              />
+              <Button label={t('common.cancel')} variant="secondary" onPress={() => setConfirmRestart(false)} />
+            </View>
+          ) : (
+            <View style={styles.sheet}>
+              <Title>{t('pause.title')}</Title>
+              <Button label={t('pause.resume')} onPress={() => setPaused(false)} />
+              <Button label={t('pause.restart')} variant="secondary" onPress={() => setConfirmRestart(true)} />
+              <Button label={t('pause.rules')} variant="secondary" onPress={() => setShowRules((v) => !v)} />
+              {showRules &&
+                RULE_KEYS.map((key) => (
+                  <Text key={key} style={styles.rule}>
+                    {t('pause.ruleLine', {
+                      label: t(`rules.${key}.label`),
+                      value: t(`rules.${key}.${String(game.ruleConfig[key])}`),
+                    })}
+                  </Text>
+                ))}
+              <Button
+                label={t('howToPlay.title')}
+                variant="secondary"
+                onPress={() => {
+                  setPaused(false);
+                  router.push('/how-to-play');
+                }}
+              />
+              <Button
+                label={t('pause.quit')}
+                variant="secondary"
+                onPress={() => {
+                  setPaused(false);
+                  store.quit();
+                  router.replace('/');
+                }}
+              />
+            </View>
+          )}
         </View>
       </Modal>
     </>
@@ -439,7 +542,7 @@ function GameView() {
 
   if (tablet) {
     const w = boardSize;
-    const h = SIDE_PANEL;
+    const h = sidePanel;
     return (
       <SafeAreaView style={styles.safe}>
         <View style={styles.tablet}>
@@ -462,17 +565,22 @@ function GameView() {
 
   return (
     <SafeAreaView style={styles.safe}>
-      <View style={styles.phone}>
+      <ScrollView contentContainerStyle={styles.phone} bounces={false}>
         <View style={styles.top}>
           <View style={styles.flex}>
             <TurnBanner seat={seat} />
           </View>
           {pauseButton}
         </View>
-        {board}
-        {controls}
-        {endNow}
-      </View>
+        <SeatStatus game={game} />
+        <View
+          style={[styles.boardSlot, { minHeight: Math.min(phoneMax, MIN_BOARD) }]}
+          onLayout={(e) => setSlot(Math.floor(e.nativeEvent.layout.height))}
+        >
+          {board}
+        </View>
+        {controls(false)}
+      </ScrollView>
       {menus}
     </SafeAreaView>
   );

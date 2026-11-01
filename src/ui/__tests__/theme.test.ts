@@ -34,6 +34,10 @@ describe.each(Object.keys(THEMES) as ThemeName[])('theme %s meets WCAG AA (R-A11
     expect(contrast(t.safeMark, t.board)).toBeGreaterThanOrEqual(3);
   });
 
+  it('the movable-pawn ring stands out from the board (3:1 for graphics)', () => {
+    expect(contrast(t.highlight, t.board)).toBeGreaterThanOrEqual(3);
+  });
+
   it('pawn outlines stand out from the board (3:1 for graphics)', () => {
     expect(contrast(t.pawnOutline, t.board)).toBeGreaterThanOrEqual(3);
   });

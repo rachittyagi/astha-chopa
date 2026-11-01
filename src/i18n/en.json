@@ -109,9 +109,9 @@
     "throwAgain": "Throw again",
     "pause": "Pause",
     "pool": "Throws to use",
-    "home": "Home: {{count}}",
+    "home": "{{count}}/{{total}} home",
     "hasHit": "Inner ring open",
-    "noHitYet": "No hit yet",
+    "noHitYet": "Inner ring locked",
     "pickThrow": "Pick a throw, then a pawn",
     "pickPawn": "Tap a highlighted pawn",
     "moveOne": "Move one",
@@ -155,15 +155,21 @@
       "title": "{{name}} wins!",
       "subtitle": "Well played!",
       "continue": "Continue"
-    }
+    },
+    "endNowTitle": "End the game now?",
+    "endNowBody": "The computer players are ranked by how far they got.",
+    "endNowConfirm": "End now"
   },
   "pause": {
     "title": "Paused",
     "resume": "Resume",
     "restart": "Restart with same setup",
     "rules": "Rules summary",
-    "quit": "Quit to Home",
-    "ruleLine": "{{label}}: {{value}}"
+    "quit": "Save and quit to Home",
+    "ruleLine": "{{label}}: {{value}}",
+    "restartTitle": "Restart this game?",
+    "restartBody": "The game in progress will be lost. Everyone starts again with the same players and rules.",
+    "restartConfirm": "Restart"
   },
   "result": {
     "title": "Results",

@@ -1,6 +1,7 @@
 import '@/i18n';
 
 import { act, fireEvent, render, screen } from '@testing-library/react-native';
+import { Alert } from 'react-native';
 import i18next from 'i18next';
 
 import { CLASSIC } from '@/engine';
@@ -115,6 +116,37 @@ describe('Game screen (TASK-46, TASK-48)', () => {
     jest.useRealTimers();
   });
 
+  it('keeps each player\'s pawns home and inner-ring state on screen', async () => {
+    gameStore.getState().startGame({ seats: seatsOf(['human', 'empty', 'human', 'empty']), config: { ...CLASSIC, noHitBehavior: 'block' } });
+    gameStore.setState({ game: withHit(place(gameStore.getState().game!, { A0: 24 }), 'A') });
+    await render(<GameScreen />);
+    expect(screen.getByLabelText('Player 1, 1/4 home, Inner ring open')).toBeTruthy();
+    expect(screen.getByLabelText('Player 3, 0/4 home, Inner ring locked')).toBeTruthy();
+  });
+
+  it('leaves the inner-ring state out when no hit is needed', async () => {
+    await render(<GameScreen />);
+    expect(screen.getByLabelText('Player 1, 0/4 home')).toBeTruthy();
+    expect(screen.queryByText('Inner ring locked')).toBeNull();
+  });
+
+  it('asks before ending a bot-only game', async () => {
+    const alert = jest.spyOn(Alert, 'alert').mockImplementation(() => undefined);
+    gameStore.getState().startGame({ seats: seatsOf(['human', 'bot', 'bot', 'empty']), config: CLASSIC });
+    // The human has finished; only the computer players are left.
+    const g = place(gameStore.getState().game!, { A0: 24, A1: 24, A2: 24, A3: 24 });
+    gameStore.setState({
+      game: { ...g, currentSeat: 'B', rankings: ['A'], seats: g.seats.map((x) => (x.id === 'A' ? { ...x, finishedRank: 1 } : x)) },
+    });
+    await render(<GameScreen />);
+    await fireEvent.press(screen.getByRole('button', { name: 'End now' }));
+    expect(gameStore.getState().game?.phase).not.toBe('finished');
+    const buttons = alert.mock.calls[0]![2]!;
+    await act(() => buttons.find((b) => b.text === 'End now')!.onPress!());
+    expect(gameStore.getState().game?.phase).toBe('finished');
+    alert.mockRestore();
+  });
+
   it('enters a pawn from the waiting area with a 4', async () => {
     gameStore.setState({ game: withPool(gameStore.getState().game!, [4, 2]) });
     await render(<GameScreen />);
@@ -127,7 +159,7 @@ describe('Game screen (TASK-46, TASK-48)', () => {
     await fireEvent.press(screen.getByRole('button', { name: 'Pause' }));
     await fireEvent.press(screen.getByRole('button', { name: 'Rules summary' }));
     expect(screen.getByText('Entering pawns: Need a 4 or 8 to enter a pawn')).toBeTruthy();
-    await fireEvent.press(screen.getByRole('button', { name: 'Quit to Home' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Save and quit to Home' }));
     expect(gameStore.getState().game).toBeNull();
     expect(gameStore.getState().saved).not.toBeNull();
     expect(mockRouter.replace).toHaveBeenCalledWith('/');
@@ -181,6 +213,12 @@ describe('Game screen (TASK-46, TASK-48)', () => {
     expect(screen.getByLabelText(/^2: /)).toBeTruthy();
     await fireEvent.press(screen.getByRole('button', { name: 'Pause' }));
     await fireEvent.press(screen.getByRole('button', { name: 'Restart with same setup' }));
+    // Restart asks first, and Cancel keeps the game.
+    expect(screen.getByText('Restart this game?')).toBeTruthy();
+    await fireEvent.press(screen.getByRole('button', { name: 'Cancel' }));
+    expect(screen.getByLabelText(/^2: /)).toBeTruthy();
+    await fireEvent.press(screen.getByRole('button', { name: 'Restart with same setup' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Restart' }));
     expect(screen.queryByLabelText(/^2: /)).toBeNull();
     jest.useRealTimers();
   });

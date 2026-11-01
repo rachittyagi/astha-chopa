@@ -15,6 +15,7 @@ export interface Theme {
   muted: string;
   accent: string;
   onAccent: string;
+  /** Ring round pawns that can move; at least 3:1 against the board. */
   highlight: string;
   preview: string;
   danger: string;
@@ -72,8 +73,8 @@ export const THEMES: Record<ThemeName, Theme> = {
     muted: '#5e4634',
     accent: '#7a3e12',
     onAccent: '#ffffff',
-    highlight: '#ffd36b',
-    preview: 'rgba(255, 236, 170, 0.6)',
+    highlight: '#123a7a',
+    preview: 'rgba(18, 58, 122, 0.3)',
     danger: '#a3221b',
     overlay: 'rgba(0, 0, 0, 0.6)',
     onOverlay: '#ffffff',
@@ -89,8 +90,8 @@ export const THEMES: Record<ThemeName, Theme> = {
     muted: '#525868',
     accent: '#3949ab',
     onAccent: '#ffffff',
-    highlight: '#ffb300',
-    preview: 'rgba(255, 179, 0, 0.25)',
+    highlight: '#00897b',
+    preview: 'rgba(0, 137, 123, 0.22)',
     danger: '#c62828',
     overlay: 'rgba(0, 0, 0, 0.6)',
     onOverlay: '#ffffff',

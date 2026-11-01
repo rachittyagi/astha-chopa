@@ -1,16 +1,17 @@
-// Smaller game-screen pieces: seat marks, shells, pool chips, turn banner, move choice.
+// Smaller game-screen pieces: seat marks, seat status, shells, pool chips, turn banner, move choice.
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Animated, Modal, Platform, Pressable, Text, View } from 'react-native';
 
-import type { Seat, SeatId, Throw } from '@/engine';
+import type { GameState, Seat, SeatId, Throw } from '@/engine';
+import type { TFunction } from 'i18next';
 import { Button } from '@/ui/common';
 import { textOn } from '@/ui/contrast';
 import { Cowrie } from '@/ui/game/Cowrie';
 import { PAWN_COLORS, SEAT_SHAPES, useThemedStyles, type Theme } from '@/ui/theme';
 
 const makeStyles = (c: Theme) => ({
-  shells: { flexDirection: 'row' as const, alignItems: 'center' as const, gap: 8, minHeight: 52 },
+  shells: { flexDirection: 'row' as const, alignItems: 'center' as const, gap: 8 },
   value: { fontSize: 28, fontWeight: '700' as const, color: c.text, marginLeft: 8, minWidth: 24 },
   chips: { flexDirection: 'row' as const, flexWrap: 'wrap' as const, gap: 12, minHeight: 60 },
   chip: {
@@ -34,7 +35,67 @@ const makeStyles = (c: Theme) => ({
   sheet: { backgroundColor: c.surface, borderRadius: 16, padding: 16, gap: 12 },
   mark: { alignItems: 'center' as const, justifyContent: 'center' as const },
   markText: { fontSize: 11, fontWeight: '700' as const },
+  status: { flexDirection: 'row' as const, gap: 6 },
+  statusCard: {
+    flex: 1,
+    minWidth: 0,
+    paddingVertical: 6,
+    paddingHorizontal: 8,
+    gap: 2,
+    borderRadius: 10,
+    borderWidth: 2,
+    borderColor: 'transparent',
+    backgroundColor: c.surface,
+  },
+  statusHead: { flexDirection: 'row' as const, alignItems: 'center' as const, gap: 6 },
+  statusName: { flexShrink: 1, color: c.text, fontSize: 14, fontWeight: '700' as const },
+  statusLine: { color: c.muted, fontSize: 13 },
+  statusLocked: { color: c.text, fontWeight: '700' as const },
 });
+
+const PAWNS_PER_SEAT = 4;
+
+/** What a seat has achieved so far: pawns home, and (when the rules gate it) whether its inner ring is open. */
+export function seatStatus(game: GameState, seat: Seat, t: TFunction) {
+  const home = game.pawns.filter((p) => p.seat === seat.id && p.pathIndex === 24).length;
+  const ring =
+    game.ruleConfig.noHitBehavior === 'free' ? null : { open: seat.hasHit, text: t(seat.hasHit ? 'game.hasHit' : 'game.noHitYet') };
+  const homeText = t('game.home', { count: home, total: PAWNS_PER_SEAT });
+  return { homeText, ring, label: [seat.name, homeText, ring?.text].filter(Boolean).join(', ') };
+}
+
+/** One card per player in the game: pawns home and inner-ring state, always on screen (phones). */
+export function SeatStatus({ game }: { game: GameState }) {
+  const { t } = useTranslation();
+  const { styles } = useThemedStyles(makeStyles);
+  return (
+    <View style={styles.status}>
+      {game.seats
+        .filter((seat) => seat.kind !== 'empty')
+        .map((seat) => {
+          const { homeText, ring, label } = seatStatus(game, seat, t);
+          const current = seat.id === game.currentSeat;
+          return (
+            <View
+              key={seat.id}
+              style={[styles.statusCard, current && { borderColor: PAWN_COLORS[seat.color] }]}
+              accessible
+              accessibilityLabel={label}
+            >
+              <View style={styles.statusHead}>
+                <SeatMark seat={seat.id} color={seat.color} size={16} />
+                <Text style={styles.statusName} numberOfLines={1}>
+                  {seat.name}
+                </Text>
+              </View>
+              <Text style={styles.statusLine}>{homeText}</Text>
+              {ring && <Text style={[styles.statusLine, !ring.open && styles.statusLocked]}>{ring.text}</Text>}
+            </View>
+          );
+        })}
+    </View>
+  );
+}
 
 /** A seat's pawn in miniature: its colour, shape and symbol (R-UX-02). */
 export function SeatMark({ seat, color, size = 18 }: { seat: SeatId; color: string; size?: number }) {
@@ -65,16 +126,16 @@ export function SeatMark({ seat, color, size = 18 }: { seat: SeatId; color: stri
 }
 
 /** The four shells: they tumble for `rollMs`, then show their faces and the value (R-THROW-04, R-UI-01). */
-export function Shells({ thrown, rollMs }: { thrown: Throw | undefined; rollMs: number }) {
-  return thrown ? <RollingShells key={thrown.id} thrown={thrown} rollMs={rollMs} /> : <EmptyShells />;
+export function Shells({ thrown, rollMs, size = 48 }: { thrown: Throw | undefined; rollMs: number; size?: number }) {
+  return thrown ? <RollingShells key={thrown.id} thrown={thrown} rollMs={rollMs} size={size} /> : <EmptyShells size={size} />;
 }
 
-function EmptyShells() {
+function EmptyShells({ size }: { size: number }) {
   const { styles } = useThemedStyles(makeStyles);
-  return <View style={styles.shells} />;
+  return <View style={[styles.shells, { minHeight: size + 4 }]} />;
 }
 
-function RollingShells({ thrown, rollMs }: { thrown: Throw; rollMs: number }) {
+function RollingShells({ thrown, rollMs, size }: { thrown: Throw; rollMs: number; size: number }) {
   const { t } = useTranslation();
   const { styles } = useThemedStyles(makeStyles);
   const [tick, setTick] = useState(0);
@@ -108,7 +169,7 @@ function RollingShells({ thrown, rollMs }: { thrown: Throw; rollMs: number }) {
   const faces = rolling ? thrown.shells.map((_, i) => (tick + i) % 2 === 0) : thrown.shells;
   return (
     <View
-      style={styles.shells}
+      style={[styles.shells, { minHeight: size + 4 }]}
       accessible
       accessibilityLabel={
         rolling
@@ -118,7 +179,7 @@ function RollingShells({ thrown, rollMs }: { thrown: Throw; rollMs: number }) {
     >
       {faces.map((up, i) => (
         <Animated.View key={i} style={rolling ? { transform: [{ rotate }] } : undefined}>
-          <Cowrie up={up} size={48} />
+          <Cowrie up={up} size={size} />
         </Animated.View>
       ))}
       <Text style={styles.value}>{rolling ? '' : thrown.value}</Text>
