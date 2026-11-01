@@ -13,13 +13,14 @@ import { cuesFor, specialThrowSound } from '@/services/feedback';
 import { memoryStore } from '@/services/storage';
 import { createSettingsStore, defaultRules } from '@/store/settings';
 import { durations, motionsFor } from '@/ui/game/motion';
+import { presetSeats } from '@/ui/setup/presets';
 import { HomeScreen } from '@/ui/screens/HomeScreen';
 import { HowToPlayScreen } from '@/ui/screens/HowToPlayScreen';
 import { ResultScreen } from '@/ui/screens/ResultScreen';
 import { SettingsScreen } from '@/ui/screens/SettingsScreen';
 import { gameStore, settingsStore } from '@/ui/testing/appStoreMock';
 
-const mockRouter = { push: jest.fn(), replace: jest.fn(), back: jest.fn() };
+const mockRouter = { push: jest.fn(), replace: jest.fn(), back: jest.fn(), canGoBack: jest.fn(() => true) };
 jest.mock('expo-router', () => ({ useRouter: () => mockRouter, useLocalSearchParams: () => ({}), Redirect: () => null }));
 jest.mock('@/store/app', () => require('@/ui/testing/appStoreMock'));
 jest.mock('react-native-safe-area-context', () => require('react-native-safe-area-context/jest/mock').default);
@@ -187,6 +188,38 @@ describe('Results screen', () => {
     await fireEvent.press(screen.getByRole('button', { name: 'Change players' }));
     expect(mockRouter.replace).toHaveBeenCalledWith({ pathname: '/setup', params: { then: 'play' } });
   });
+
+  it('gives the winner a card of their own; the others are listed by place', async () => {
+    gameStore.getState().startGame({ seats: seatsOf(['human', 'human', 'human', 'empty']), config: CLASSIC });
+    const game = gameStore.getState().game!;
+    gameStore.setState({ game: { ...game, phase: 'finished', rankings: ['B', 'A', 'C'] } });
+    await render(<ResultScreen />);
+    expect(screen.getByText('Winner')).toBeTruthy();
+    expect(screen.getByLabelText('Place 1: Player 2')).toBeTruthy();
+    expect(screen.getByLabelText('Place 2: Player 1')).toHaveTextContent(/2\./);
+    expect(screen.getByLabelText('Place 3: Player 3')).toBeTruthy();
+  });
+});
+
+describe('Home save notice', () => {
+  it('explains a removed save and can be dismissed with a button', async () => {
+    gameStore.setState({ saveProblem: 'unreadable', saved: null, game: null });
+    await render(<HomeScreen />);
+    expect(screen.getByText(/couldn't be read/)).toBeTruthy();
+    await fireEvent.press(screen.getByRole('button', { name: 'OK' }));
+    expect(gameStore.getState().saveProblem).toBeNull();
+  });
+});
+
+describe('default names follow the language', () => {
+  it('names new seats in Hindi when the app is in Hindi', async () => {
+    await i18next.changeLanguage('hi');
+    try {
+      expect(presetSeats(2).map((s) => s.name)).toEqual(['खिलाड़ी 1', 'खिलाड़ी 2', 'खिलाड़ी 3', 'खिलाड़ी 4']);
+    } finally {
+      await i18next.changeLanguage('en');
+    }
+  });
 });
 
 describe('app name in one place (TASK-59, R-I18N-03)', () => {
@@ -199,6 +232,12 @@ describe('app name in one place (TASK-59, R-I18N-03)', () => {
 
 describe('Settings screen (TASK-61, TASK-53)', () => {
   beforeEach(() => settingsStore.setState({ theme: 'chalk', sound: true, speed: 'normal', language: 'en' }));
+
+  it('has Back at the top', async () => {
+    await render(<SettingsScreen />);
+    await fireEvent.press(screen.getByRole('button', { name: 'Back' }));
+    expect(mockRouter.back).toHaveBeenCalled();
+  });
 
   it('switches theme, sound and speed immediately', async () => {
     await render(<SettingsScreen />);

@@ -32,6 +32,7 @@ describe.each(Object.keys(THEMES) as ThemeName[])('theme %s meets WCAG AA (R-A11
 
   it('safe-square marks and grid lines stand out from the board (3:1 for graphics)', () => {
     expect(contrast(t.safeMark, t.board)).toBeGreaterThanOrEqual(3);
+    expect(contrast(t.boardLine, t.board)).toBeGreaterThanOrEqual(3);
   });
 
   it('the movable-pawn ring stands out from the board (3:1 for graphics)', () => {

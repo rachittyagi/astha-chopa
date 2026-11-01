@@ -16,22 +16,22 @@ import {
 import { BOT_LEVELS } from '@/bot';
 import { gameStore, settingsStore, useSettings } from '@/store/app';
 import { defaultRules, type Settings } from '@/store/settings';
-import { Button, ChoiceRow, Screen, Segmented, Title } from '@/ui/common';
+import { Button, ChoiceRow, Header, Screen, Segmented } from '@/ui/common';
 import { firstSetup, nextColor, PLAYER_COUNTS, presetSeats, setKind, type PlayerCount } from '@/ui/setup/presets';
-import { MIN_TOUCH, PAWN_COLORS, useThemedStyles, type Theme } from '@/ui/theme';
+import { font, MIN_TOUCH, PAWN_COLORS, radius, space, useThemedStyles, type Theme } from '@/ui/theme';
 
 const KINDS: SeatKind[] = ['human', 'bot', 'empty'];
 const INNER_RING: Settings['innerRing'][] = ['open', 'hit'];
 
 const makeStyles = (colors: Theme) => ({
-  label: { fontSize: 16, fontWeight: '700' as const, color: colors.text, marginTop: 4 },
-  seat: { backgroundColor: colors.surface, borderRadius: 12, padding: 12, gap: 8 },
+  label: { fontSize: font.label, fontWeight: '700' as const, color: colors.text, marginTop: space.xs },
+  seat: { backgroundColor: colors.surface, borderRadius: radius.md, padding: space.md, gap: space.sm },
   seatHeader: { flexDirection: 'row' as const, justifyContent: 'space-between' as const, alignItems: 'center' as const },
   side: { fontWeight: '700' as const, color: colors.text, fontSize: 17 },
   colour: { flexDirection: 'row' as const, alignItems: 'center' as const, gap: 8, minHeight: MIN_TOUCH },
   colourText: { color: colors.muted, fontSize: 15 },
   swatch: { width: 36, height: 36, borderRadius: 18, borderWidth: 2, borderColor: colors.text },
-  fieldLabel: { color: colors.muted, fontSize: 14, fontWeight: '600' as const },
+  fieldLabel: { color: colors.muted, fontSize: font.caption, fontWeight: '600' as const },
   input: {
     minHeight: MIN_TOUCH,
     borderWidth: 1,
@@ -43,7 +43,7 @@ const makeStyles = (colors: Theme) => ({
   },
   field: { gap: 4 },
   problem: { color: colors.danger, fontWeight: '600' as const },
-  hint: { color: colors.muted, fontSize: 14 },
+  hint: { color: colors.muted, fontSize: font.caption },
 });
 
 /** The Classic rules with this inner-ring choice, or null when the config is not Classic. */
@@ -106,7 +106,7 @@ export function SetupScreen() {
 
   return (
     <Screen scroll>
-      <Title>{t('setup.title')}</Title>
+      <Header title={t('setup.title')} onBack={leave} />
 
       <Text style={styles.label}>{t('setup.players')}</Text>
       <Segmented

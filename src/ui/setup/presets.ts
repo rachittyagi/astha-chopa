@@ -1,5 +1,6 @@
 // Quick presets for 1–4 human players (R-MODE-01..03). A preset only pre-fills the seats.
 import type { SeatConfig, SeatKind } from '@/engine';
+import i18next from '@/i18n';
 import type { GameSetup } from '@/services/persistence';
 import { defaultRules } from '@/store/settings';
 import { DEFAULT_SEAT_COLORS, PAWN_COLORS } from '@/ui/theme';
@@ -15,7 +16,8 @@ const KINDS: Record<PlayerCount, SeatKind[]> = {
 };
 
 export function defaultNames(): string[] {
-  return [1, 2, 3, 4].map((n) => `Player ${n}`);
+  // In the app's language ("Player 1", "खिलाड़ी 1"); names already typed are kept as they are.
+  return [1, 2, 3, 4].map((n) => i18next.t('setup.defaultName', { n }));
 }
 
 /** Seats for a preset, keeping names and colours the user already chose. */

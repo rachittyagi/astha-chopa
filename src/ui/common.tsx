@@ -1,37 +1,41 @@
-import { useState, type ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Modal, Pressable, ScrollView, Switch, Text, View } from 'react-native';
+import { AccessibilityInfo, Modal, Pressable, ScrollView, Switch, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { MIN_TOUCH, useThemedStyles, type Theme } from './theme';
+import { useRouter } from 'expo-router';
+
+import { font, MIN_TOUCH, radius, space, useThemedStyles, type Theme } from './theme';
 
 const makeStyles = (c: Theme) => ({
   screen: { flex: 1, backgroundColor: c.background },
-  content: { padding: 16, gap: 12 },
+  content: { padding: space.lg, gap: space.md },
   fill: { flex: 1 },
-  title: { fontSize: 30, fontWeight: '700' as const, color: c.text },
-  body: { fontSize: 18, color: c.text, lineHeight: 26 },
-  muted: { fontSize: 16, color: c.muted },
+  title: { fontSize: font.title, fontWeight: '700' as const, color: c.text },
+  body: { fontSize: font.body, color: c.text, lineHeight: 26 },
+  muted: { fontSize: font.label, color: c.muted },
   button: {
     minHeight: 56,
-    borderRadius: 14,
-    paddingHorizontal: 20,
+    borderRadius: radius.md,
+    paddingHorizontal: space.xl,
     alignItems: 'center' as const,
     justifyContent: 'center' as const,
   },
   primary: { backgroundColor: c.accent },
   secondary: { backgroundColor: c.surface, borderWidth: 2, borderColor: c.accent },
-  dim: { opacity: 0.5 },
-  buttonText: { fontSize: 19, fontWeight: '600' as const, textAlign: 'center' as const },
-  large: { minHeight: 72, borderRadius: 18 },
+  // Pressed and disabled look different: a press darkens and sinks a little, disabled fades.
+  pressed: { opacity: 0.8, transform: [{ scale: 0.98 }] },
+  disabled: { opacity: 0.4 },
+  buttonText: { fontSize: font.button, fontWeight: '600' as const, textAlign: 'center' as const },
+  large: { minHeight: 72, borderRadius: radius.lg },
   largeText: { fontSize: 26, fontWeight: '800' as const },
   primaryText: { color: c.onAccent },
   secondaryText: { color: c.accent },
-  segmented: { flexDirection: 'row' as const, flexWrap: 'wrap' as const, gap: 6 },
+  segmented: { flexDirection: 'row' as const, flexWrap: 'wrap' as const, gap: space.sm },
   segment: {
     minHeight: 48,
-    paddingHorizontal: 14,
-    borderRadius: 10,
+    paddingHorizontal: space.md,
+    borderRadius: radius.sm,
     borderWidth: 1.5,
     borderColor: c.accent,
     justifyContent: 'center' as const,
@@ -44,22 +48,22 @@ const makeStyles = (c: Theme) => ({
     minHeight: 56,
     flexDirection: 'row' as const,
     alignItems: 'center' as const,
-    gap: 12,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 12,
+    gap: space.md,
+    paddingVertical: space.sm,
+    paddingHorizontal: space.md,
+    borderRadius: radius.md,
     backgroundColor: c.surface,
   },
   choiceText: { flex: 1, gap: 2 },
   choiceLabel: { fontSize: 15, color: c.muted, fontWeight: '600' as const },
   choiceValue: { fontSize: 17, color: c.text, fontWeight: '600' as const },
   chevron: { fontSize: 26, color: c.accent },
-  overlay: { flex: 1, backgroundColor: c.overlay, justifyContent: 'center' as const, padding: 24 },
+  overlay: { flex: 1, backgroundColor: c.overlay, justifyContent: 'center' as const, padding: space.xl },
   sheet: {
     backgroundColor: c.surface,
-    borderRadius: 16,
-    padding: 16,
-    gap: 8,
+    borderRadius: radius.lg,
+    padding: space.lg,
+    gap: space.sm,
     maxWidth: 480,
     maxHeight: '100%' as const,
     // A ScrollView grows to fill by default; the sheet should hug its content.
@@ -90,6 +94,17 @@ const makeStyles = (c: Theme) => ({
   },
   radioDot: { width: 11, height: 11, borderRadius: 6, backgroundColor: c.accent },
   optionText: { flex: 1, fontSize: 17, color: c.text },
+  header: { flexDirection: 'row' as const, alignItems: 'center' as const, gap: space.sm, marginLeft: -space.sm },
+  back: {
+    minHeight: MIN_TOUCH,
+    minWidth: MIN_TOUCH,
+    paddingHorizontal: space.sm,
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    borderRadius: radius.sm,
+  },
+  backText: { color: c.accent, fontSize: font.label, fontWeight: '700' as const },
+  headerTitle: { flex: 1, fontSize: font.heading, fontWeight: '800' as const, color: c.text },
   toggle: {
     minHeight: MIN_TOUCH,
     flexDirection: 'row' as const,
@@ -142,7 +157,8 @@ export function Button({
         styles.button,
         size === 'large' && styles.large,
         primary ? styles.primary : styles.secondary,
-        (pressed || disabled) && styles.dim,
+        pressed && styles.pressed,
+        disabled && styles.disabled,
       ]}
     >
       <Text
@@ -179,7 +195,7 @@ export function Segmented<T extends string | boolean>({
             onPress={() => onChange(option)}
             accessibilityRole="radio"
             accessibilityState={{ selected }}
-            style={[styles.segment, selected && styles.segmentSelected]}
+            style={({ pressed }) => [styles.segment, selected && styles.segmentSelected, pressed && styles.pressed]}
           >
             <Text style={[styles.segmentText, selected && styles.segmentTextSelected]}>{labelOf(option)}</Text>
           </Pressable>
@@ -216,7 +232,7 @@ export function ChoiceRow<T extends string | boolean>({
         onPress={() => setOpen(true)}
         accessibilityRole="button"
         accessibilityLabel={`${label}: ${labelOf(value)}`}
-        style={({ pressed }) => [styles.choiceRow, pressed && styles.dim]}
+        style={({ pressed }) => [styles.choiceRow, pressed && styles.pressed]}
       >
         <View style={styles.choiceText}>
           <Text style={styles.choiceLabel}>{label}</Text>
@@ -272,6 +288,47 @@ export function Toggle({ label, value, onChange }: { label: string; value: boole
         trackColor={{ true: theme.accent, false: theme.muted }}
         thumbColor={theme.surface}
       />
+    </View>
+  );
+}
+
+/** True when the system asks for less motion (R-A11Y): decorative animation is then left out. */
+export function useReduceMotion() {
+  const [reduce, setReduce] = useState(false);
+  useEffect(() => {
+    let live = true;
+    void AccessibilityInfo.isReduceMotionEnabled().then((on) => live && setReduce(on));
+    const sub = AccessibilityInfo.addEventListener('reduceMotionChanged', setReduce);
+    return () => {
+      live = false;
+      sub.remove();
+    };
+  }, []);
+  return reduce;
+}
+
+/**
+ * The top bar of a secondary screen: Back where people look for it, and the screen's title.
+ * `onBack` defaults to going back, or Home when there is nothing to go back to.
+ */
+export function Header({ title, onBack }: { title: string; onBack?(): void }) {
+  const { t } = useTranslation();
+  const router = useRouter();
+  const { styles } = useThemedStyles(makeStyles);
+  const back = onBack ?? (() => (router.canGoBack() ? router.back() : router.replace('/')));
+  return (
+    <View style={styles.header}>
+      <Pressable
+        onPress={back}
+        accessibilityRole="button"
+        accessibilityLabel={t('common.back')}
+        style={({ pressed }) => [styles.back, pressed && styles.pressed]}
+      >
+        <Text style={styles.backText}>{`‹ ${t('common.back')}`}</Text>
+      </Pressable>
+      <Text style={styles.headerTitle} accessibilityRole="header" numberOfLines={2}>
+        {title}
+      </Text>
     </View>
   );
 }

@@ -1,6 +1,6 @@
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
-import { Alert, Text, View } from 'react-native';
+import { Alert, Pressable, Text, View } from 'react-native';
 
 import { APP_NAME } from '@/config/app';
 import type { SeatConfig } from '@/engine';
@@ -9,13 +9,25 @@ import { Button, Screen } from '@/ui/common';
 import { SeatMark } from '@/ui/game/Controls';
 import { Cowrie } from '@/ui/game/Cowrie';
 import { firstSetup } from '@/ui/setup/presets';
-import { useThemedStyles, type Theme } from '@/ui/theme';
+import { font, MIN_TOUCH, radius, space, useThemedStyles, type Theme } from '@/ui/theme';
 
 const makeStyles = (c: Theme) => ({
   hero: { flex: 1, alignItems: 'center' as const, justifyContent: 'center' as const, gap: 10 },
   title: { fontSize: 44, fontWeight: '800' as const, color: c.accent, textAlign: 'center' as const },
   subtitle: { fontSize: 18, color: c.muted, textAlign: 'center' as const },
-  notice: { color: c.danger, textAlign: 'center' as const, fontSize: 16 },
+  notice: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    gap: space.sm,
+    padding: space.md,
+    borderRadius: radius.md,
+    borderWidth: 2,
+    borderColor: c.danger,
+    backgroundColor: c.surface,
+  },
+  noticeText: { flex: 1, color: c.danger, fontSize: font.label },
+  dismiss: { minHeight: MIN_TOUCH, minWidth: MIN_TOUCH, justifyContent: 'center' as const, paddingHorizontal: space.sm },
+  dismissText: { color: c.accent, fontSize: font.label, fontWeight: '700' as const },
   shells: { flexDirection: 'row' as const, gap: 14, marginTop: 18 },
   players: { flexDirection: 'row' as const, flexWrap: 'wrap' as const, justifyContent: 'center' as const, gap: 14 },
   player: { flexDirection: 'row' as const, alignItems: 'center' as const, gap: 6 },
@@ -70,9 +82,17 @@ export function HomeScreen() {
         </View>
       </View>
       {problem && (
-        <Text style={styles.notice} onPress={() => gameStore.getState().dismissSaveProblem()}>
-          {t(problem === 'oldVersion' ? 'home.saveOldVersion' : 'home.saveUnreadable')}
-        </Text>
+        <View style={styles.notice} accessibilityLiveRegion="polite">
+          <Text style={styles.noticeText}>{t(problem === 'oldVersion' ? 'home.saveOldVersion' : 'home.saveUnreadable')}</Text>
+          <Pressable
+            onPress={() => gameStore.getState().dismissSaveProblem()}
+            accessibilityRole="button"
+            accessibilityLabel={t('home.dismiss')}
+            style={styles.dismiss}
+          >
+            <Text style={styles.dismissText}>{t('home.dismiss')}</Text>
+          </Pressable>
+        </View>
       )}
       <View style={styles.actions}>
         <PlayerRow seats={players} label={t('home.whoPlays')} styles={styles} />

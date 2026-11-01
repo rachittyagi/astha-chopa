@@ -1,11 +1,10 @@
-import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { Alert, Pressable, Text, View } from 'react-native';
 
 import { gameStore, settingsStore, useGame, useSettings } from '@/store/app';
 import type { Settings } from '@/store/settings';
-import { Button, Screen, Segmented, Title, Toggle } from '@/ui/common';
-import { THEMES as PALETTES, useThemedStyles, type Theme } from '@/ui/theme';
+import { Button, Header, Screen, Segmented, Toggle } from '@/ui/common';
+import { font, radius, space, THEMES as PALETTES, useThemedStyles, type Theme } from '@/ui/theme';
 
 const THEMES: Settings['theme'][] = ['festive', 'chalk', 'wood', 'flat'];
 const SWATCH = 44;
@@ -13,23 +12,23 @@ const SPEEDS: Settings['speed'][] = ['normal', 'fast'];
 const LANGUAGES: Settings['language'][] = ['en', 'hi'];
 
 const makeStyles = (c: Theme) => ({
-  label: { fontSize: 16, fontWeight: '700' as const, color: c.text, marginTop: 8 },
-  group: { gap: 8 },
-  themes: { flexDirection: 'row' as const, flexWrap: 'wrap' as const, gap: 8 },
+  label: { fontSize: font.label, fontWeight: '700' as const, color: c.text, marginTop: space.sm },
+  group: { gap: space.sm },
+  themes: { flexDirection: 'row' as const, flexWrap: 'wrap' as const, gap: space.sm },
   themeCard: {
     flexBasis: '47%' as const,
     flexGrow: 1,
     flexDirection: 'row' as const,
     alignItems: 'center' as const,
-    gap: 10,
-    padding: 8,
-    borderRadius: 12,
+    gap: space.sm,
+    padding: space.sm,
+    borderRadius: radius.md,
     borderWidth: 1.5,
     borderColor: c.muted,
     backgroundColor: c.surface,
   },
   themeSelected: { borderColor: c.accent, borderWidth: 3 },
-  themeName: { flex: 1, color: c.text, fontSize: 16, fontWeight: '600' as const },
+  themeName: { flex: 1, color: c.text, fontSize: font.label, fontWeight: '600' as const },
 });
 
 /** A tiny board in a theme's colours: its squares, a safe-square cross and a button-coloured pawn. */
@@ -58,7 +57,6 @@ function ThemeSwatch({ name }: { name: Settings['theme'] }) {
 
 export function SettingsScreen() {
   const { t } = useTranslation();
-  const router = useRouter();
   const { styles } = useThemedStyles(makeStyles);
   const settings = useSettings((s) => s);
   const saved = useGame((s) => s.saved);
@@ -72,7 +70,7 @@ export function SettingsScreen() {
 
   return (
     <Screen scroll>
-      <Title>{t('settings.title')}</Title>
+      <Header title={t('settings.title')} />
 
       <View style={styles.group}>
         <Text style={styles.label}>{t('settings.theme')}</Text>
@@ -123,7 +121,6 @@ export function SettingsScreen() {
       </View>
 
       {saved && <Button label={t('settings.reset')} variant="secondary" onPress={reset} />}
-      <Button label={t('common.back')} onPress={() => router.back()} />
     </Screen>
   );
 }

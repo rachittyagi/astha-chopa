@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { AccessibilityInfo, Animated, Easing, Platform, Pressable, Text, View } from 'react-native';
+import { Animated, Easing, Platform, Pressable, Text, View } from 'react-native';
 
 import {
   isSafe,
@@ -13,6 +13,7 @@ import {
   type Pawn,
   type Square,
 } from '@/engine';
+import { useReduceMotion } from '@/ui/common';
 import { textOn } from '@/ui/contrast';
 import { PAWN_COLORS, SEAT_SHAPES, useThemedStyles, type Theme } from '@/ui/theme';
 
@@ -41,21 +42,6 @@ const BORDER = 3;
 const HALO = 1.4;
 const CROWDED_HALO = 1.2;
 const PULSE_MS = 650;
-
-/** True when the system asks for less motion; the halo then stays still. */
-function useReduceMotion() {
-  const [reduce, setReduce] = useState(false);
-  useEffect(() => {
-    let live = true;
-    void AccessibilityInfo.isReduceMotionEnabled().then((on) => live && setReduce(on));
-    const sub = AccessibilityInfo.addEventListener('reduceMotionChanged', setReduce);
-    return () => {
-      live = false;
-      sub.remove();
-    };
-  }, []);
-  return reduce;
-}
 
 /** One pawn as drawn: every pawn gets its own token, so stacks are easy to count. */
 interface Token {

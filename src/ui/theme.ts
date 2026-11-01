@@ -66,7 +66,8 @@ export const THEMES: Record<ThemeName, Theme> = {
   wood: {
     background: '#f3e6cf',
     surface: '#fffaf0',
-    board: '#c8955a',
+    // Light maple, so pawns of every colour but yellow and orange stand out by fill as well as outline.
+    board: '#e8c99a',
     boardLine: '#4a2e14',
     safeMark: '#4a2e14',
     text: '#2b1d10',
@@ -84,7 +85,7 @@ export const THEMES: Record<ThemeName, Theme> = {
     background: '#f6f7fb',
     surface: '#ffffff',
     board: '#ffffff',
-    boardLine: '#b9bfcc',
+    boardLine: '#7d8496',
     safeMark: '#7a8194',
     text: '#1c1f26',
     muted: '#525868',
@@ -120,6 +121,23 @@ export const SEAT_SHAPES = {
 } as const;
 
 export const MIN_TOUCH = 44;
+
+/** Type scale (pt). Screens pick from these instead of one-off sizes. */
+export const font = {
+  caption: 14,
+  label: 16,
+  body: 18,
+  button: 19,
+  heading: 22,
+  title: 30,
+  display: 44,
+} as const;
+
+/** Spacing scale (pt) for padding and gaps. */
+export const space = { xs: 4, sm: 8, md: 12, lg: 16, xl: 24, xxl: 32 } as const;
+
+/** Corner radii (pt): controls, cards, sheets, and fully round. */
+export const radius = { sm: 8, md: 12, lg: 16, xl: 24, round: 999 } as const;
 
 export function useTheme(): Theme {
   return THEMES[useSettings((s) => s.theme)];

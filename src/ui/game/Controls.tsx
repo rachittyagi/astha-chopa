@@ -5,7 +5,7 @@ import { Animated, Modal, Platform, Pressable, Text, View } from 'react-native';
 
 import type { GameState, Seat, SeatId, Throw } from '@/engine';
 import type { TFunction } from 'i18next';
-import { Button } from '@/ui/common';
+import { Button, useReduceMotion } from '@/ui/common';
 import { textOn } from '@/ui/contrast';
 import { Cowrie } from '@/ui/game/Cowrie';
 import { PAWN_COLORS, SEAT_SHAPES, useThemedStyles, type Theme } from '@/ui/theme';
@@ -178,9 +178,15 @@ function RollingShells({ thrown, rollMs, size }: { thrown: Throw; rollMs: number
   const [tick, setTick] = useState(0);
   const [rolling, setRolling] = useState(rollMs > 0);
   const [wobble] = useState(() => new Animated.Value(0));
+  // With less motion asked for, the shells rest face down while the throw is decided, then turn over.
+  const reduceMotion = useReduceMotion();
 
   useEffect(() => {
     if (rollMs <= 0) return;
+    if (reduceMotion) {
+      const done = setTimeout(() => setRolling(false), rollMs);
+      return () => clearTimeout(done);
+    }
     const spin = Animated.loop(
       Animated.sequence([
         Animated.timing(wobble, { toValue: 1, duration: 90, useNativeDriver: Platform.OS !== 'web' }),
@@ -200,10 +206,10 @@ function RollingShells({ thrown, rollMs, size }: { thrown: Throw; rollMs: number
       clearTimeout(done);
       spin.stop();
     };
-  }, [rollMs, wobble]);
+  }, [rollMs, wobble, reduceMotion]);
 
   const rotate = wobble.interpolate({ inputRange: [-1, 1], outputRange: ['-25deg', '25deg'] });
-  const faces = rolling ? thrown.shells.map((_, i) => (tick + i) % 2 === 0) : thrown.shells;
+  const faces = rolling ? thrown.shells.map((_, i) => !reduceMotion && (tick + i) % 2 === 0) : thrown.shells;
   return (
     <View
       style={[styles.shells, { minHeight: size + 4 }]}
@@ -215,7 +221,7 @@ function RollingShells({ thrown, rollMs, size }: { thrown: Throw; rollMs: number
       }
     >
       {faces.map((up, i) => (
-        <Animated.View key={i} style={rolling ? { transform: [{ rotate }] } : undefined}>
+        <Animated.View key={i} style={rolling && !reduceMotion ? { transform: [{ rotate }] } : undefined}>
           <Cowrie up={up} size={size} />
         </Animated.View>
       ))}

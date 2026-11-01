@@ -16,7 +16,8 @@
     "playersAndRules": "Players & rules",
     "computer": "{{name}} (computer)",
     "whoPlays": "Who is playing",
-    "nextPlayers": "New game players"
+    "nextPlayers": "New game players",
+    "dismiss": "OK"
   },
   "setup": {
     "title": "Players & rules",
@@ -65,7 +66,8 @@
     "innerRings": {
       "open": "Open from the start",
       "hit": "Needs a hit first"
-    }
+    },
+    "defaultName": "Player {{n}}"
   },
   "colors": {
     "red": "Red",
@@ -191,7 +193,8 @@
     "playAgain": "Play again",
     "changePlayers": "Change players",
     "home": "Home",
-    "a11y": "Place {{rank}}: {{name}}"
+    "a11y": "Place {{rank}}: {{name}}",
+    "winner": "Winner"
   },
   "howToPlay": {
     "title": "How to play",

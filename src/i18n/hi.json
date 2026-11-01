@@ -16,7 +16,8 @@
     "playersAndRules": "खिलाड़ी और नियम",
     "computer": "{{name}} (कंप्यूटर)",
     "whoPlays": "कौन खेल रहा है",
-    "nextPlayers": "नए खेल के खिलाड़ी"
+    "nextPlayers": "नए खेल के खिलाड़ी",
+    "dismiss": "ठीक है"
   },
   "setup": {
     "title": "खिलाड़ी और नियम",
@@ -65,7 +66,8 @@
     "innerRings": {
       "open": "शुरू से खुला",
       "hit": "पहले मारना ज़रूरी"
-    }
+    },
+    "defaultName": "खिलाड़ी {{n}}"
   },
   "colors": {
     "red": "लाल",
@@ -191,7 +193,8 @@
     "playAgain": "फिर खेलें",
     "changePlayers": "खिलाड़ी बदलें",
     "home": "मुख्य पेज",
-    "a11y": "{{rank}} स्थान: {{name}}"
+    "a11y": "{{rank}} स्थान: {{name}}",
+    "winner": "विजेता"
   },
   "howToPlay": {
     "title": "कैसे खेलें",

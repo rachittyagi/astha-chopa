@@ -6,14 +6,27 @@ import { Text, View } from 'react-native';
 import { gameStore, useGame } from '@/store/app';
 import { Button, Screen, Title } from '@/ui/common';
 import { SeatMark } from '@/ui/game/Controls';
-import { useThemedStyles, type Theme } from '@/ui/theme';
+import { Trophy } from '@/ui/game/Trophy';
+import { font, PAWN_COLORS, radius, space, useThemedStyles, type Theme } from '@/ui/theme';
 
 const makeStyles = (c: Theme) => ({
-  list: { flex: 1, gap: 12, paddingTop: 12 },
-  row: { flexDirection: 'row' as const, alignItems: 'center' as const, gap: 12 },
-  rank: { fontSize: 24, fontWeight: '800' as const, color: c.text, minWidth: 36 },
-  name: { fontSize: 20, color: c.text },
-  actions: { gap: 12, paddingBottom: 24 },
+  list: { flex: 1, gap: space.md, paddingTop: space.md },
+  // The winner gets a card of their own, in their colour, so the result still feels like a win.
+  winner: {
+    alignItems: 'center' as const,
+    gap: space.sm,
+    padding: space.xl,
+    borderRadius: radius.xl,
+    borderWidth: 3,
+    backgroundColor: c.surface,
+  },
+  winnerLabel: { fontSize: font.label, fontWeight: '700' as const, color: c.muted, textTransform: 'uppercase' as const },
+  winnerRow: { flexDirection: 'row' as const, alignItems: 'center' as const, gap: space.md },
+  winnerName: { fontSize: font.title, fontWeight: '800' as const, color: c.text, flexShrink: 1 },
+  row: { flexDirection: 'row' as const, alignItems: 'center' as const, gap: space.md, paddingHorizontal: space.sm },
+  rank: { fontSize: font.heading, fontWeight: '800' as const, color: c.text, minWidth: 36 },
+  name: { fontSize: font.body, color: c.text },
+  actions: { gap: space.md, paddingBottom: space.xl },
 });
 
 export function ResultScreen() {
@@ -26,15 +39,34 @@ export function ResultScreen() {
 
   if (!game || game.phase !== 'finished') return <Redirect href="/" />;
 
+  const seatOf = (id: string) => game.seats.find((s) => s.id === id)!;
+  const [first, ...rest] = game.rankings;
+  const winner = first ? seatOf(first) : null;
+
   return (
     <Screen>
       <Title>{t('result.title')}</Title>
       <View style={styles.list}>
-        {game.rankings.map((id, i) => {
-          const seat = game.seats.find((s) => s.id === id)!;
+        {winner && (
+          <View
+            style={[styles.winner, { borderColor: PAWN_COLORS[winner.color] }]}
+            accessible
+            accessibilityLabel={t('result.a11y', { rank: 1, name: winner.name })}
+          >
+            <Trophy size={56} />
+            <Text style={styles.winnerLabel}>{t('result.winner')}</Text>
+            <View style={styles.winnerRow}>
+              <SeatMark seat={winner.id} color={winner.color} size={30} />
+              <Text style={styles.winnerName}>{winner.name}</Text>
+            </View>
+          </View>
+        )}
+        {rest.map((id, i) => {
+          const seat = seatOf(id);
+          const rank = i + 2;
           return (
-            <View key={id} style={styles.row} accessible accessibilityLabel={t('result.a11y', { rank: i + 1, name: seat.name })}>
-              <Text style={styles.rank}>{t('result.place', { rank: i + 1 })}</Text>
+            <View key={id} style={styles.row} accessible accessibilityLabel={t('result.a11y', { rank, name: seat.name })}>
+              <Text style={styles.rank}>{t('result.place', { rank })}</Text>
               <SeatMark seat={seat.id} color={seat.color} size={26} />
               <Text style={styles.name}>{seat.name}</Text>
             </View>
@@ -44,6 +76,7 @@ export function ResultScreen() {
       <View style={styles.actions}>
         <Button
           label={t('result.playAgain')}
+          size="large"
           onPress={() => {
             if (setup) gameStore.getState().startGame(setup);
             router.replace('/game');
