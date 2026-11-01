@@ -1,5 +1,6 @@
 import { Redirect, useRouter } from 'expo-router';
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
+import type { TFunction } from 'i18next';
 import { useTranslation } from 'react-i18next';
 import { AccessibilityInfo, Alert, Modal, ScrollView, Text, useWindowDimensions, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -18,6 +19,10 @@ import { selectionView, tapPawn, tapThrow, tapWaiting, type SelectionView, type 
 import { useThemedStyles, type Theme } from '@/ui/theme';
 
 const CALLOUT_MS = 1800;
+/** A callout with more waiting behind it gives way sooner. */
+const QUEUED_CALLOUT_MS = 1200;
+/** Callouts kept waiting at most; older ones are dropped so fast bot turns do not pile up. */
+const MAX_CALLOUTS = 3;
 /** After the shells settle, a bot waits this much longer before moving, so everyone can read the throw. */
 const READ_PAUSE_MS = 900;
 /** Tablets in landscape get a seat at each side of the board (R-LOCAL-04). */
@@ -54,7 +59,9 @@ function useBotDriver(game: GameState | null, paused: boolean, busy: boolean, fa
  */
 function useEventFeedback() {
   const { t } = useTranslation();
-  const [callout, setCallout] = useState<string | null>(null);
+  // Every event callout is shown in turn, so a hit is not hidden by the "inner ring unlocked" after it.
+  const [callouts, setCallouts] = useState<{ id: number; text: string }[]>([]);
+  const nextCalloutId = useRef(1);
   const [motions, setMotions] = useState<Motion[]>([]);
   // The latest throw stays visible even when its turn ends at once (no legal move).
   const [lastThrow, setLastThrow] = useState<Throw | null>(null);
@@ -94,7 +101,10 @@ function useEventFeedback() {
               else speak(phrase, settings.language);
             }
           }
-          if (shown.length > 0) setCallout(shown[shown.length - 1]!);
+          if (shown.length > 0) {
+            const added = shown.map((text) => ({ id: nextCalloutId.current++, text: text! }));
+            setCallouts((queue) => [...queue, ...added].slice(-MAX_CALLOUTS));
+          }
           if (spoken.length > 0) AccessibilityInfo.announceForAccessibility(spoken.join('. '));
         };
         if (calloutTimer.current) clearTimeout(calloutTimer.current);
@@ -131,11 +141,14 @@ function useEventFeedback() {
     [],
   );
 
+  const current = callouts[0];
+  const queued = callouts.length > 1;
   useEffect(() => {
-    if (!callout) return;
-    const timer = setTimeout(() => setCallout(null), CALLOUT_MS);
+    if (!current) return;
+    const timer = setTimeout(() => setCallouts((queue) => queue.slice(1)), queued ? QUEUED_CALLOUT_MS : CALLOUT_MS);
     return () => clearTimeout(timer);
-  }, [callout]);
+  }, [current, queued]);
+  const callout = current?.text ?? null;
 
   const motionDone = useCallback((id: number) => setMotions((queue) => queue.filter((m) => m.id !== id)), []);
   const clearWinner = useCallback(() => setWinner(null), []);
@@ -163,7 +176,6 @@ const makeStyles = (c: Theme) => ({
     borderRadius: 12,
   },
   calloutText: { color: c.onOverlay, fontSize: 20, fontWeight: '700' as const, textAlign: 'center' as const },
-  hint: { color: c.text, fontSize: 18, lineHeight: 24 },
   overlay: { flex: 1, backgroundColor: c.overlay, justifyContent: 'center' as const, padding: 24 },
   sheet: {
     backgroundColor: c.surface,
@@ -171,9 +183,13 @@ const makeStyles = (c: Theme) => ({
     padding: 16,
     gap: 10,
     maxWidth: 480,
+    maxHeight: '100%' as const,
+    // A ScrollView grows to fill by default; the sheet should hug its content.
+    flexGrow: 0,
     width: '100%' as const,
     alignSelf: 'center' as const,
   },
+  sheetScroll: { gap: 10 },
   rule: { color: c.text, fontSize: 14 },
   tablet: { flex: 1, flexDirection: 'row' as const, alignItems: 'center' as const, justifyContent: 'center' as const },
   column: { alignItems: 'center' as const, justifyContent: 'center' as const, gap: 8 },
@@ -198,6 +214,13 @@ const makeStyles = (c: Theme) => ({
 
 type Styles = ReturnType<typeof makeStyles>;
 
+/** What the player whose turn it is should do next, while they may act. */
+function hintFor(game: GameState, view: SelectionView, canAct: boolean, t: TFunction): string | null {
+  if (game.phase !== 'moving' || !canAct) return null;
+  if (view.activeThrowId === null) return t('game.pickThrow');
+  return view.movablePawnIds.length === 0 && view.canEnter ? t('game.pickEnter') : t('game.pickPawn');
+}
+
 interface TurnControlsProps {
   game: GameState;
   seat: Seat;
@@ -211,7 +234,7 @@ interface TurnControlsProps {
   rolling: boolean;
   styles: Styles;
   onTap(outcome: TapOutcome): void;
-  /** Tablet side panels: smaller shells, and no reserved space (the panel has a fixed size). */
+  /** Tablet side panels: smaller shells and the hint (phones show it in the turn banner). */
   compact?: boolean;
   /** Shown in the throw button's place when nobody human is left to throw (End now). */
   idleAction?: ReactNode;
@@ -220,8 +243,8 @@ interface TurnControlsProps {
 }
 
 /**
- * Shells, pool chips, hint and the throw button for the player whose turn it is. On phones each
- * part keeps its height whether or not it has anything to show, so the board above stays put.
+ * Shells, pool chips and the throw button for the player whose turn it is. On phones each part
+ * keeps its height whether or not it has anything to show, so the board above stays put.
  */
 function TurnControls({
   game,
@@ -239,17 +262,14 @@ function TurnControls({
   header,
 }: TurnControlsProps) {
   const { t } = useTranslation();
-  const { fontScale } = useWindowDimensions();
   const selectedPawnId = useGame((s) => s.selectedPawnId);
-  const hint =
-    game.phase === 'moving' && canAct
-      ? view.activeThrowId === null
-        ? t('game.pickThrow')
-        : view.movablePawnIds.length === 0 && view.canEnter
-          ? t('game.pickEnter')
-          : t('game.pickPawn')
-      : null;
-  const shells = <Shells thrown={lastThrow ?? undefined} rollMs={rollMs} size={compact ? 36 : 48} />;
+  const hint = hintFor(game, view, canAct, t);
+  const canThrow = human && game.phase === 'throwing' && !rolling;
+  const throwNow = () => gameStore.getState().dispatch({ type: 'Throw', seat: seat.id });
+  // The shells themselves can be tapped to throw, like picking them up (R-UI-01).
+  const shells = (
+    <Shells thrown={lastThrow ?? undefined} rollMs={rollMs} size={compact ? 36 : 48} onPress={canThrow ? throwNow : undefined} />
+  );
   const chips = game.phase === 'moving' && (
     <PoolChips
       pool={rolling ? game.pool.filter((p) => p.id !== lastThrow?.id) : game.pool}
@@ -258,19 +278,13 @@ function TurnControls({
       onPress={(id) => onTap(tapThrow(game, id, selectedPawnId))}
     />
   );
-  // Two lines are kept for the hint, so a longer one does not push the controls down.
-  const hintText = (
-    <Text style={compact ? styles.sideHint : [styles.hint, { minHeight: 2 * 24 * fontScale }]} numberOfLines={2}>
-      {hint ?? ''}
-    </Text>
-  );
   const action =
     human && game.phase === 'throwing' ? (
       <Button
         label={game.pool.length > 0 && !rolling ? t('game.throwAgain') : t('game.throw')}
         size={compact ? 'normal' : 'large'}
         disabled={rolling}
-        onPress={() => gameStore.getState().dispatch({ type: 'Throw', seat: seat.id })}
+        onPress={throwNow}
       />
     ) : (
       idleAction
@@ -282,7 +296,11 @@ function TurnControls({
         <View style={styles.sideInfo}>
           {header}
           {shells}
-          {hint && hintText}
+          {hint && (
+            <Text style={styles.sideHint} numberOfLines={2}>
+              {hint}
+            </Text>
+          )}
         </View>
         <View style={styles.sideActions}>
           {chips}
@@ -295,7 +313,6 @@ function TurnControls({
     <View style={styles.controls}>
       {shells}
       <View style={styles.chipSlot}>{chips}</View>
-      {hintText}
       <View style={styles.actionSlot}>{action}</View>
     </View>
   );
@@ -502,7 +519,8 @@ function GameView() {
               <Button label={t('common.cancel')} variant="secondary" onPress={() => setConfirmRestart(false)} />
             </View>
           ) : (
-            <View style={styles.sheet}>
+            // Scrolls when the rules summary or large text makes it taller than the screen.
+            <ScrollView style={styles.sheet} contentContainerStyle={styles.sheetScroll}>
               <Title>{t('pause.title')}</Title>
               <Button label={t('pause.resume')} onPress={() => setPaused(false)} />
               <Button label={t('pause.restart')} variant="secondary" onPress={() => setConfirmRestart(true)} />
@@ -533,7 +551,7 @@ function GameView() {
                   router.replace('/');
                 }}
               />
-            </View>
+            </ScrollView>
           )}
         </View>
       </Modal>
@@ -568,7 +586,7 @@ function GameView() {
       <ScrollView contentContainerStyle={styles.phone} bounces={false}>
         <View style={styles.top}>
           <View style={styles.flex}>
-            <TurnBanner seat={seat} />
+            <TurnBanner seat={seat} hint={hintFor(game, view, canAct, t)} />
           </View>
           {pauseButton}
         </View>

@@ -1,11 +1,12 @@
 import '@/i18n';
 
-import { fireEvent, render, screen } from '@testing-library/react-native';
+import { act, fireEvent, render, screen } from '@testing-library/react-native';
+import { Alert } from 'react-native';
 
 import { CLASSIC } from '@/engine';
 import { nextColor, presetSeats, setKind } from '@/ui/setup/presets';
 import { SetupScreen } from '@/ui/screens/SetupScreen';
-import { gameStore } from '@/ui/testing/appStoreMock';
+import { gameStore, settingsStore } from '@/ui/testing/appStoreMock';
 
 const mockRouter = { push: jest.fn(), replace: jest.fn(), back: jest.fn(), canGoBack: jest.fn(() => true) };
 let mockParams: { then?: string } = {};
@@ -115,8 +116,52 @@ describe('Game setup screen (TASK-44)', () => {
     await render(<SetupScreen />);
     await fireEvent.press(screen.getByText('Custom'));
     expect(screen.getByText('Entering pawns')).toBeTruthy();
-    await fireEvent.press(screen.getByText('Keep circling the outer ring'));
+    // Each rule is one row showing its value; tapping it opens the choices.
+    await fireEvent.press(screen.getByRole('button', { name: 'Before your first hit: Enter the inner ring any time' }));
+    await fireEvent.press(screen.getByRole('radio', { name: 'Keep circling the outer ring' }));
+    expect(screen.getByRole('button', { name: 'Before your first hit: Keep circling the outer ring' })).toBeTruthy();
     await fireEvent.press(screen.getByRole('button', { name: 'Save' }));
     expect(gameStore.getState().lastSetup?.config.noHitBehavior).toBe('circle');
+  });
+
+  it('Save and play from Home starts a game with the chosen players', async () => {
+    await render(<SetupScreen />);
+    await fireEvent.press(screen.getByText('4'));
+    await fireEvent.press(screen.getByRole('button', { name: 'Save and play' }));
+    expect(gameStore.getState().game?.seats.filter((s) => s.kind === 'human')).toHaveLength(4);
+    expect(mockRouter.replace).toHaveBeenCalledWith('/game');
+  });
+
+  it('Save and play asks before replacing an unfinished game', async () => {
+    gameStore.getState().startGame({ seats: presetSeats(2), config: CLASSIC });
+    const unfinished = gameStore.getState().game;
+    gameStore.setState({ game: null });
+    const alert = jest.spyOn(Alert, 'alert').mockImplementation(() => undefined);
+    await render(<SetupScreen />);
+    await fireEvent.press(screen.getByRole('button', { name: 'Save and play' }));
+    expect(mockRouter.replace).not.toHaveBeenCalled();
+    const buttons = alert.mock.calls[0]![2]!;
+    await act(() => buttons.find((b) => b.text === 'Replace')!.onPress!());
+    expect(gameStore.getState().game?.id).not.toBe(unfinished?.id);
+    expect(mockRouter.replace).toHaveBeenCalledWith('/game');
+    alert.mockRestore();
+  });
+
+  it('Classic rules offer the inner-ring choice, which also becomes the default', async () => {
+    await render(<SetupScreen />);
+    await fireEvent.press(screen.getByRole('button', { name: 'Inner ring: Open from the start' }));
+    await fireEvent.press(screen.getByRole('radio', { name: 'Needs a hit first' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Save' }));
+    expect(gameStore.getState().lastSetup?.config.noHitBehavior).toBe('block');
+    expect(settingsStore.getState().innerRing).toBe('hit');
+    settingsStore.setState({ innerRing: 'open' });
+  });
+
+  it('labels each seat\'s name, colour and computer level', async () => {
+    await render(<SetupScreen />);
+    expect(screen.getByRole('button', { name: 'Colour: Red' })).toBeTruthy();
+    expect(screen.getAllByText('Name').length).toBeGreaterThan(0);
+    expect(screen.getByText('Computer level')).toBeTruthy();
+    expect(screen.getByText('1 vs computer')).toBeTruthy();
   });
 });

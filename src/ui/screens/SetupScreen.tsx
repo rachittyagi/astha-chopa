@@ -1,7 +1,7 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Pressable, Text, TextInput, View } from 'react-native';
+import { Alert, Pressable, Text, TextInput, View } from 'react-native';
 
 import {
   RULE_KEYS,
@@ -14,20 +14,24 @@ import {
   type SeatKind,
 } from '@/engine';
 import { BOT_LEVELS } from '@/bot';
-import { gameStore, useSettings } from '@/store/app';
-import { defaultRules } from '@/store/settings';
-import { Button, Screen, Segmented, Title } from '@/ui/common';
+import { gameStore, settingsStore, useSettings } from '@/store/app';
+import { defaultRules, type Settings } from '@/store/settings';
+import { Button, ChoiceRow, Screen, Segmented, Title } from '@/ui/common';
 import { firstSetup, nextColor, PLAYER_COUNTS, presetSeats, setKind, type PlayerCount } from '@/ui/setup/presets';
 import { MIN_TOUCH, PAWN_COLORS, useThemedStyles, type Theme } from '@/ui/theme';
 
 const KINDS: SeatKind[] = ['human', 'bot', 'empty'];
+const INNER_RING: Settings['innerRing'][] = ['open', 'hit'];
 
 const makeStyles = (colors: Theme) => ({
   label: { fontSize: 16, fontWeight: '700' as const, color: colors.text, marginTop: 4 },
   seat: { backgroundColor: colors.surface, borderRadius: 12, padding: 12, gap: 8 },
   seatHeader: { flexDirection: 'row' as const, justifyContent: 'space-between' as const, alignItems: 'center' as const },
-  side: { fontWeight: '700' as const, color: colors.text },
-  swatch: { width: MIN_TOUCH, height: MIN_TOUCH, borderRadius: MIN_TOUCH / 2, borderWidth: 2, borderColor: '#fff' },
+  side: { fontWeight: '700' as const, color: colors.text, fontSize: 17 },
+  colour: { flexDirection: 'row' as const, alignItems: 'center' as const, gap: 8, minHeight: MIN_TOUCH },
+  colourText: { color: colors.muted, fontSize: 15 },
+  swatch: { width: 36, height: 36, borderRadius: 18, borderWidth: 2, borderColor: colors.text },
+  fieldLabel: { color: colors.muted, fontSize: 14, fontWeight: '600' as const },
   input: {
     minHeight: MIN_TOUCH,
     borderWidth: 1,
@@ -37,11 +41,16 @@ const makeStyles = (colors: Theme) => ({
     color: colors.text,
     fontSize: 16,
   },
-  rule: { gap: 6 },
-  ruleLabel: { color: colors.text, fontWeight: '600' as const },
+  field: { gap: 4 },
   problem: { color: colors.danger, fontWeight: '600' as const },
   hint: { color: colors.muted, fontSize: 14 },
 });
+
+/** The Classic rules with this inner-ring choice, or null when the config is not Classic. */
+function classicRing(config: RuleConfig): Settings['innerRing'] | null {
+  const same = (innerRing: Settings['innerRing']) => JSON.stringify(config) === JSON.stringify(defaultRules({ innerRing }));
+  return INNER_RING.find(same) ?? null;
+}
 
 export function SetupScreen() {
   const { t } = useTranslation();
@@ -56,8 +65,10 @@ export function SetupScreen() {
   const humans = initial.seats.filter((s) => s.kind === 'human').length;
   const [count, setCount] = useState<PlayerCount>(Math.min(4, Math.max(1, humans)) as PlayerCount);
   const [seats, setSeats] = useState<SeatConfig[]>(initial.seats);
-  const isClassic = JSON.stringify(initial.config) === JSON.stringify(defaultRules({ innerRing }));
-  const [mode, setMode] = useState<'classic' | 'custom'>(isClassic ? 'classic' : 'custom');
+  const initialRing = classicRing(initial.config);
+  const [mode, setMode] = useState<'classic' | 'custom'>(initialRing ? 'classic' : 'custom');
+  // Classic rules differ only in whether the inner ring needs a hit first; it is chosen here.
+  const [ring, setRing] = useState<Settings['innerRing']>(initialRing ?? innerRing);
   const [custom, setCustom] = useState<RuleConfig>(initial.config);
 
   const problems = validateSeats(seats);
@@ -67,15 +78,30 @@ export function SetupScreen() {
   // Setup can be the first screen (a deep link, a web reload), so there may be nothing to go back to.
   const leave = () => (router.canGoBack() ? router.back() : router.replace('/'));
 
-  // From Home, Save only remembers the choice and Play starts the game with it.
+  const chosen = () => {
+    // The Classic inner-ring choice is also the default for later games and How to play.
+    if (mode === 'classic') settingsStore.getState().update({ innerRing: ring });
+    return { seats, config: mode === 'classic' ? defaultRules({ innerRing: ring }) : custom };
+  };
+
+  // Save only remembers the choice; Home's Play then starts a game with it.
   const save = () => {
-    const setup = { seats, config: mode === 'classic' ? defaultRules({ innerRing }) : custom };
-    if (!playNext) {
-      gameStore.getState().saveSetup(setup);
-      return leave();
-    }
-    gameStore.getState().startGame(setup);
+    gameStore.getState().saveSetup(chosen());
+    leave();
+  };
+
+  const play = () => {
+    gameStore.getState().startGame(chosen());
     router.replace('/game');
+  };
+
+  // Starting now replaces an unfinished game, so ask first, as Home's New game does.
+  const saveAndPlay = () => {
+    if (playNext || !gameStore.getState().saved) return play();
+    Alert.alert(t('setup.replaceTitle'), t('setup.replaceBody'), [
+      { text: t('common.cancel'), style: 'cancel' },
+      { text: t('setup.replace'), style: 'destructive', onPress: play },
+    ]);
   };
 
   return (
@@ -86,7 +112,7 @@ export function SetupScreen() {
       <Segmented
         options={PLAYER_COUNTS.map(String)}
         value={String(count)}
-        labelOf={(c) => t('setup.playersCount', { count: Number(c) })}
+        labelOf={(c) => (c === '1' ? t('setup.playersSolo') : t('setup.playersCount', { count: Number(c) }))}
         accessibilityLabel={t('setup.players')}
         onChange={(c) => {
           const n = Number(c) as PlayerCount;
@@ -97,17 +123,22 @@ export function SetupScreen() {
 
       {seats.map((seat, i) => {
         const side = t(`setup.seat.${SEAT_IDS[i]}`);
+        const colour = t(`colors.${seat.color}`);
         return (
           <View key={SEAT_IDS[i]} style={styles.seat}>
             <View style={styles.seatHeader}>
-              <Text style={styles.side}>{side}</Text>
+              <Text style={styles.side}>{t('setup.seatTitle', { side })}</Text>
               {seat.kind !== 'empty' && (
                 <Pressable
                   onPress={() => update(i, { color: nextColor(seats, i) })}
                   accessibilityRole="button"
-                  accessibilityLabel={`${t('setup.colour')}: ${t(`colors.${seat.color}`)}`}
-                  style={[styles.swatch, { backgroundColor: PAWN_COLORS[seat.color] }]}
-                />
+                  accessibilityLabel={`${t('setup.colour')}: ${colour}`}
+                  accessibilityHint={t('setup.colourHint')}
+                  style={styles.colour}
+                >
+                  <Text style={styles.colourText}>{colour}</Text>
+                  <View style={[styles.swatch, { backgroundColor: PAWN_COLORS[seat.color] }]} />
+                </Pressable>
               )}
             </View>
             <Segmented
@@ -118,22 +149,30 @@ export function SetupScreen() {
               onChange={(k) => setSeats((all) => setKind(all, i, k))}
             />
             {seat.kind !== 'empty' && (
-              <TextInput
-                value={seat.name}
-                onChangeText={(name) => update(i, { name })}
-                accessibilityLabel={t('setup.name', { side })}
-                maxLength={20}
-                placeholderTextColor={theme.muted}
-                style={styles.input}
-              />
+              <View style={styles.field}>
+                <Text style={styles.fieldLabel}>{t('setup.nameLabel')}</Text>
+                <TextInput
+                  value={seat.name}
+                  onChangeText={(name) => update(i, { name })}
+                  accessibilityLabel={t('setup.name', { side })}
+                  placeholder={t('setup.namePlaceholder')}
+                  maxLength={20}
+                  placeholderTextColor={theme.muted}
+                  style={styles.input}
+                />
+              </View>
             )}
             {seat.kind === 'bot' && (
-              <Segmented<BotLevel>
-                options={BOT_LEVELS}
-                value={seat.botLevel ?? 'medium'}
-                labelOf={(l) => t(`setup.level.${l}`)}
-                onChange={(botLevel) => update(i, { botLevel })}
-              />
+              <View style={styles.field}>
+                <Text style={styles.fieldLabel}>{t('setup.levelLabel')}</Text>
+                <Segmented<BotLevel>
+                  options={BOT_LEVELS}
+                  value={seat.botLevel ?? 'medium'}
+                  labelOf={(l) => t(`setup.level.${l}`)}
+                  accessibilityLabel={t('setup.levelLabel')}
+                  onChange={(botLevel) => update(i, { botLevel })}
+                />
+              </View>
             )}
           </View>
         );
@@ -144,20 +183,28 @@ export function SetupScreen() {
         options={['classic', 'custom']}
         value={mode}
         labelOf={(m) => t(`setup.${m}`)}
+        accessibilityLabel={t('setup.rules')}
         onChange={setMode}
       />
+      {mode === 'classic' && (
+        <ChoiceRow<Settings['innerRing']>
+          label={t('setup.innerRing')}
+          options={INNER_RING}
+          value={ring}
+          labelOf={(v) => t(`setup.innerRings.${v}`)}
+          onChange={setRing}
+        />
+      )}
       {mode === 'custom' &&
         RULE_KEYS.map((key) => (
-          <View key={key} style={styles.rule}>
-            <Text style={styles.ruleLabel}>{t(`rules.${key}.label`)}</Text>
-            <Segmented
-              options={RULE_OPTIONS[key] as readonly (string | boolean)[]}
-              value={custom[key]}
-              labelOf={(v) => t(`rules.${key}.${String(v)}`)}
-              accessibilityLabel={t(`rules.${key}.label`)}
-              onChange={(v) => setCustom((c) => ({ ...c, [key]: v }))}
-            />
-          </View>
+          <ChoiceRow<string | boolean>
+            key={key}
+            label={t(`rules.${key}.label`)}
+            options={RULE_OPTIONS[key] as readonly (string | boolean)[]}
+            value={custom[key]}
+            labelOf={(v) => t(`rules.${key}.${String(v)}`)}
+            onChange={(v) => setCustom((c) => ({ ...c, [key]: v }))}
+          />
         ))}
 
       {problems.map((p) => (
@@ -166,7 +213,8 @@ export function SetupScreen() {
         </Text>
       ))}
       {!playNext && <Text style={styles.hint}>{t('setup.saveHint')}</Text>}
-      <Button label={t(playNext ? 'setup.saveAndPlay' : 'setup.save')} onPress={save} disabled={problems.length > 0} />
+      <Button label={t('setup.saveAndPlay')} onPress={saveAndPlay} disabled={problems.length > 0} />
+      {!playNext && <Button label={t('setup.save')} onPress={save} variant="secondary" disabled={problems.length > 0} />}
       <Button label={t('common.cancel')} onPress={leave} variant="secondary" />
     </Screen>
   );

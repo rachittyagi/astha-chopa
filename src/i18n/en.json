@@ -45,7 +45,7 @@
     "custom": "Custom",
     "save": "Save",
     "saveAndPlay": "Save and play",
-    "saveHint": "Saved players and rules are used the next time you tap Play or New game.",
+    "saveHint": "Save keeps these players and rules for the next time you tap Play or New game.",
     "problem": {
       "tooFewPlayers": "Choose at least 2 players.",
       "noHuman": "At least one player must be human.",
@@ -54,7 +54,18 @@
     },
     "replaceTitle": "Replace your saved game?",
     "replaceBody": "Starting a new game removes the game you haven't finished.",
-    "replace": "Replace"
+    "replace": "Replace",
+    "playersSolo": "1 vs computer",
+    "seatTitle": "{{side}} seat",
+    "colourHint": "Changes to the next free colour",
+    "nameLabel": "Name",
+    "namePlaceholder": "Type a name",
+    "levelLabel": "Computer level",
+    "innerRing": "Inner ring",
+    "innerRings": {
+      "open": "Open from the start",
+      "hit": "Needs a hit first"
+    }
   },
   "colors": {
     "red": "Red",
@@ -104,7 +115,6 @@
   },
   "game": {
     "yourTurn": "Your turn",
-    "botTurn": "{{name}} is playing",
     "throw": "Throw",
     "throwAgain": "Throw again",
     "pause": "Pause",
@@ -145,7 +155,7 @@
       "inner": "inner",
       "home": "home"
     },
-    "pickEnter": "Tap your waiting pawns on the start square to bring one in",
+    "pickEnter": "Tap a waiting pawn to bring it in",
     "speech": {
       "value": "{{value}}",
       "chamma": "Chamma!",
@@ -158,7 +168,11 @@
     },
     "endNowTitle": "End the game now?",
     "endNowBody": "The computer players are ranked by how far they got.",
-    "endNowConfirm": "End now"
+    "endNowConfirm": "End now",
+    "botThinking": "Computer is thinking…",
+    "poolShort": "Use:",
+    "doubleTitle": "Move the double?",
+    "doubleBody": "Two of your pawns share this square. Move one of them, or both together."
   },
   "pause": {
     "title": "Paused",
@@ -260,12 +274,6 @@
     "reset": "Reset saved game",
     "resetTitle": "Reset saved game?",
     "resetBody": "The game you haven't finished will be deleted.",
-    "callouts": "Call out throws",
-    "innerRing": "Inner ring",
-    "innerRings": {
-      "open": "Open from the start",
-      "hit": "Needs a hit first"
-    },
-    "innerRingHint": "Used for new games. You can still change it under Custom rules."
+    "callouts": "Call out throws"
   }
 }

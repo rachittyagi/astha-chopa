@@ -13,7 +13,8 @@ import { PAWN_COLORS, SEAT_SHAPES, useThemedStyles, type Theme } from '@/ui/them
 const makeStyles = (c: Theme) => ({
   shells: { flexDirection: 'row' as const, alignItems: 'center' as const, gap: 8 },
   value: { fontSize: 28, fontWeight: '700' as const, color: c.text, marginLeft: 8, minWidth: 24 },
-  chips: { flexDirection: 'row' as const, flexWrap: 'wrap' as const, gap: 12, minHeight: 60 },
+  chips: { flexDirection: 'row' as const, flexWrap: 'wrap' as const, alignItems: 'center' as const, gap: 12, minHeight: 60 },
+  chipsLabel: { color: c.muted, fontSize: 15, fontWeight: '600' as const },
   chip: {
     minWidth: 60,
     minHeight: 60,
@@ -30,9 +31,11 @@ const makeStyles = (c: Theme) => ({
   chipTextActive: { color: c.onAccent },
   banner: { paddingVertical: 10, paddingHorizontal: 16, borderRadius: 14 },
   bannerName: { fontSize: 24, fontWeight: '800' as const },
-  bannerTurn: { fontSize: 18 },
+  bannerTurn: { fontSize: 17, lineHeight: 22 },
   overlay: { flex: 1, backgroundColor: c.overlay, justifyContent: 'center' as const, padding: 32 },
   sheet: { backgroundColor: c.surface, borderRadius: 16, padding: 16, gap: 12 },
+  sheetTitle: { color: c.text, fontSize: 22, fontWeight: '800' as const },
+  sheetBody: { color: c.text, fontSize: 17, lineHeight: 24 },
   mark: { alignItems: 'center' as const, justifyContent: 'center' as const },
   markText: { fontSize: 11, fontWeight: '700' as const },
   status: { flexDirection: 'row' as const, gap: 6 },
@@ -126,13 +129,47 @@ export function SeatMark({ seat, color, size = 18 }: { seat: SeatId; color: stri
 }
 
 /** The four shells: they tumble for `rollMs`, then show their faces and the value (R-THROW-04, R-UI-01). */
-export function Shells({ thrown, rollMs, size = 48 }: { thrown: Throw | undefined; rollMs: number; size?: number }) {
-  return thrown ? <RollingShells key={thrown.id} thrown={thrown} rollMs={rollMs} size={size} /> : <EmptyShells size={size} />;
+export function Shells({
+  thrown,
+  rollMs,
+  size = 48,
+  onPress,
+}: {
+  thrown: Throw | undefined;
+  rollMs: number;
+  size?: number;
+  /** Tapping the shells throws them; screen readers use the Throw button instead. */
+  onPress?(): void;
+}) {
+  const shells = thrown ? (
+    <RollingShells key={thrown.id} thrown={thrown} rollMs={rollMs} size={size} />
+  ) : (
+    <EmptyShells size={size} />
+  );
+  // Always wrapped, so the shells are not remounted (and rolled again) when they become tappable.
+  return (
+    <Pressable
+      onPress={onPress}
+      disabled={!onPress}
+      accessible={false}
+      testID="shells"
+      style={{ alignSelf: 'flex-start' }}
+    >
+      {shells}
+    </Pressable>
+  );
 }
 
+/** Before the first throw: the four shells face down, ready to be picked up. */
 function EmptyShells({ size }: { size: number }) {
   const { styles } = useThemedStyles(makeStyles);
-  return <View style={[styles.shells, { minHeight: size + 4 }]} />;
+  return (
+    <View style={[styles.shells, { minHeight: size + 4 }]} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+      {[0, 1, 2, 3].map((i) => (
+        <Cowrie key={i} up={false} size={size} />
+      ))}
+    </View>
+  );
 }
 
 function RollingShells({ thrown, rollMs, size }: { thrown: Throw; rollMs: number; size: number }) {
@@ -202,6 +239,11 @@ export function PoolChips({
   const { styles } = useThemedStyles(makeStyles);
   return (
     <View style={styles.chips} accessibilityLabel={t('game.pool')}>
+      {pool.length > 0 && (
+        <Text style={styles.chipsLabel} importantForAccessibility="no" accessibilityElementsHidden>
+          {t('game.poolShort')}
+        </Text>
+      )}
       {pool.map((thrown) => {
         const enabled = playable.includes(thrown.id);
         return (
@@ -222,7 +264,8 @@ export function PoolChips({
   );
 }
 
-export function TurnBanner({ seat }: { seat: Seat }) {
+/** Whose turn it is, and what they should do next (the hint), or that the computer is thinking. */
+export function TurnBanner({ seat, hint }: { seat: Seat; hint?: string | null }) {
   const { t } = useTranslation();
   const { styles } = useThemedStyles(makeStyles);
   const fill = PAWN_COLORS[seat.color]!;
@@ -230,8 +273,8 @@ export function TurnBanner({ seat }: { seat: Seat }) {
   return (
     <View style={[styles.banner, { backgroundColor: fill }]} accessibilityRole="header" accessibilityLiveRegion="polite">
       <Text style={[styles.bannerName, ink]}>{seat.name}</Text>
-      <Text style={[styles.bannerTurn, ink]}>
-        {seat.kind === 'bot' ? t('game.botTurn', { name: seat.name }) : t('game.yourTurn')}
+      <Text style={[styles.bannerTurn, ink]} numberOfLines={2}>
+        {seat.kind === 'bot' ? t('game.botThinking') : (hint ?? t('game.yourTurn'))}
       </Text>
     </View>
   );
@@ -254,6 +297,10 @@ export function MoveChoice({
     <Modal transparent visible={visible} animationType="fade" onRequestClose={onCancel}>
       <Pressable style={styles.overlay} onPress={onCancel}>
         <View style={styles.sheet}>
+          <Text style={styles.sheetTitle} accessibilityRole="header">
+            {t('game.doubleTitle')}
+          </Text>
+          <Text style={styles.sheetBody}>{t('game.doubleBody')}</Text>
           <Button label={t('game.moveOne')} onPress={onOne} />
           <Button label={t('game.moveBoth')} onPress={onBoth} />
           <Button label={t('common.cancel')} onPress={onCancel} variant="secondary" />

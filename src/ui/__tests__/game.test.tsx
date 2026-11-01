@@ -147,6 +147,50 @@ describe('Game screen (TASK-46, TASK-48)', () => {
     alert.mockRestore();
   });
 
+  it('shows every callout in turn instead of only the last', async () => {
+    jest.useFakeTimers();
+    await render(<GameScreen />);
+    await act(() => {
+      gameStore.setState({
+        events: [
+          { type: 'PawnHit', pawnId: 'C0', by: 'A' },
+          { type: 'InnerRingUnlocked', seat: 'A' },
+        ],
+      });
+    });
+    expect(screen.getByText('Hit! Bonus throw', { includeHiddenElements: true })).toBeTruthy();
+    await act(() => {
+      jest.advanceTimersByTime(1300);
+    });
+    expect(screen.getByText('Inner ring unlocked', { includeHiddenElements: true })).toBeTruthy();
+    jest.useRealTimers();
+  });
+
+  it('throws when the shells are tapped, and puts the next step in the turn banner', async () => {
+    jest.useFakeTimers();
+    gameStore.setState({ game: rigged(gameStore.getState().game!, [4, 2]) });
+    await render(<GameScreen />);
+    expect(screen.getByText('Your turn')).toBeTruthy();
+    await fireEvent.press(screen.getByTestId('shells'));
+    expect(gameStore.getState().game?.pool).toHaveLength(1);
+    await act(() => {
+      jest.advanceTimersByTime(durations(false).shellsMs);
+    });
+    await fireEvent.press(screen.getByTestId('shells'));
+    await act(() => {
+      jest.advanceTimersByTime(durations(false).shellsMs);
+    });
+    expect(screen.getByText('Tap a waiting pawn to bring it in')).toBeTruthy();
+    jest.useRealTimers();
+  });
+
+  it('says the computer is thinking on a bot\'s turn', async () => {
+    gameStore.getState().startGame({ seats: seatsOf(['human', 'empty', 'bot', 'empty']), config: CLASSIC });
+    gameStore.setState({ game: { ...gameStore.getState().game!, currentSeat: 'C' } });
+    await render(<GameScreen />);
+    expect(screen.getByText('Computer is thinking…')).toBeTruthy();
+  });
+
   it('enters a pawn from the waiting area with a 4', async () => {
     gameStore.setState({ game: withPool(gameStore.getState().game!, [4, 2]) });
     await render(<GameScreen />);
