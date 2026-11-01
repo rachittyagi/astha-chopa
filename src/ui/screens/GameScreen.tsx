@@ -18,22 +18,29 @@ import { selectionView, tapPawn, tapThrow, tapWaiting, type SelectionView, type 
 import { useThemedStyles, type Theme } from '@/ui/theme';
 
 const CALLOUT_MS = 1800;
+/** After the shells settle, a bot waits this much longer before moving, so everyone can read the throw. */
+const READ_PAUSE_MS = 900;
 /** Tablets in landscape get a seat at each side of the board (R-LOCAL-04). */
 const TABLET_MIN_WIDTH = 900;
 const SIDE_PANEL = 170;
 
-/** Plays bot turns after a 600–1000 ms pause (R-BOT-02), halved at Fast speed or with no human left. */
-function useBotDriver(game: GameState | null, paused: boolean, fast: boolean) {
+/**
+ * Plays bot turns after a 600–1000 ms pause (R-BOT-02), halved at Fast speed or with no human left.
+ * The pause starts only once the shells have settled and every pawn has finished moving (`busy`),
+ * and a move gets an extra read pause so the throw can be seen before the pawn goes.
+ */
+function useBotDriver(game: GameState | null, paused: boolean, busy: boolean, fast: boolean) {
   useEffect(() => {
-    if (!game || paused || game.phase === 'finished') return;
+    if (!game || paused || busy || game.phase === 'finished') return;
     const seat = game.seats.find((s) => s.id === game.currentSeat);
     if (seat?.kind !== 'bot') return;
     const { delayMs, botRngState } = botDelay(game.botRngState);
-    const wait = fast ? delayMs / 2 : delayMs;
+    const total = delayMs + (game.phase === 'moving' ? READ_PAUSE_MS : 0);
+    const wait = fast ? total / 2 : total;
     // Bot decisions take well under 10 ms (R-BOT-04), so running one in a timer is fine.
     const timer = setTimeout(() => gameStore.getState().playBot(botRngState), wait);
     return () => clearTimeout(timer);
-  }, [game, paused, fast]);
+  }, [game, paused, busy, fast]);
 }
 
 /**
@@ -46,10 +53,14 @@ function useEventFeedback() {
   const [motions, setMotions] = useState<Motion[]>([]);
   // The latest throw stays visible even when its turn ends at once (no legal move).
   const [lastThrow, setLastThrow] = useState<Throw | null>(null);
-  // The seat that just finished first, celebrated on screen.
+  // The seat that just finished first, celebrated on screen once its winning move has played.
   const [winner, setWinner] = useState<SeatId | null>(null);
+  // True while the shells tumble: the result stays hidden until they settle.
+  const [rolling, setRolling] = useState(false);
   const nextMotionId = useRef(1);
   const calloutTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // The reveal waiting for the shells to settle; a new batch runs it at once instead of dropping it.
+  const pendingReveal = useRef<(() => void) | null>(null);
   const speechTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(
@@ -65,6 +76,7 @@ function useEventFeedback() {
         const settings = settingsStore.getState();
         const wait = thrown ? durations(settings.speed === 'fast' || !humanStillPlaying(game)).shellsMs : 0;
         const show = () => {
+          setRolling(false);
           // Once the shells settle: Chamma and Ashta get their own sound, then the result is
           // spoken ("3", "Chamma!"), just after the special sound so the two do not clash.
           if (thrown?.type === 'ThrowResolved') {
@@ -81,8 +93,17 @@ function useEventFeedback() {
           if (spoken.length > 0) AccessibilityInfo.announceForAccessibility(spoken.join('. '));
         };
         if (calloutTimer.current) clearTimeout(calloutTimer.current);
-        if (wait > 0) calloutTimer.current = setTimeout(show, wait);
-        else show();
+        const earlier = pendingReveal.current;
+        pendingReveal.current = null;
+        earlier?.();
+        if (wait > 0) {
+          setRolling(true);
+          pendingReveal.current = show;
+          calloutTimer.current = setTimeout(() => {
+            pendingReveal.current = null;
+            show();
+          }, wait);
+        } else show();
 
         const added = motionsFor(events, nextMotionId.current);
         nextMotionId.current += added.length;
@@ -113,7 +134,10 @@ function useEventFeedback() {
 
   const motionDone = useCallback((id: number) => setMotions((queue) => queue.filter((m) => m.id !== id)), []);
   const clearWinner = useCallback(() => setWinner(null), []);
-  return { callout, motions, motionDone, lastThrow, winner, clearWinner };
+  // Bots and the results screen wait from the moment of the win; the overlay waits for the pawns.
+  const celebrating = winner !== null;
+  const shownWinner = motions.length === 0 ? winner : null;
+  return { callout, motions, motionDone, lastThrow, rolling, winner: shownWinner, celebrating, clearWinner };
 }
 
 const makeStyles = (c: Theme) => ({
@@ -167,19 +191,23 @@ interface TurnControlsProps {
   game: GameState;
   seat: Seat;
   human: boolean;
+  /** The human whose turn it is may tap now: not while the shells tumble. */
+  canAct: boolean;
   view: SelectionView;
   lastThrow: Throw | null;
   rollMs: number;
+  /** The shells are still tumbling: hide the new throw's chip, the hint and Throw again. */
+  rolling: boolean;
   styles: Styles;
   onTap(outcome: TapOutcome): void;
 }
 
 /** Shells, pool chips, hint and the throw button for the player whose turn it is. */
-function TurnControls({ game, seat, human, view, lastThrow, rollMs, styles, onTap }: TurnControlsProps) {
+function TurnControls({ game, seat, human, canAct, view, lastThrow, rollMs, rolling, styles, onTap }: TurnControlsProps) {
   const { t } = useTranslation();
   const selectedPawnId = useGame((s) => s.selectedPawnId);
   const hint =
-    game.phase === 'moving' && human
+    game.phase === 'moving' && canAct
       ? view.activeThrowId === null
         ? t('game.pickThrow')
         : view.movablePawnIds.length === 0 && view.canEnter
@@ -191,8 +219,8 @@ function TurnControls({ game, seat, human, view, lastThrow, rollMs, styles, onTa
       <Shells thrown={lastThrow ?? undefined} rollMs={rollMs} />
       {game.phase === 'moving' && (
         <PoolChips
-          pool={game.pool}
-          playable={human ? view.playableThrowIds : []}
+          pool={rolling ? game.pool.filter((p) => p.id !== lastThrow?.id) : game.pool}
+          playable={view.playableThrowIds}
           active={view.activeThrowId}
           onPress={(id) => onTap(tapThrow(game, id, selectedPawnId))}
         />
@@ -200,8 +228,9 @@ function TurnControls({ game, seat, human, view, lastThrow, rollMs, styles, onTa
       {hint && <Text style={styles.hint}>{hint}</Text>}
       {human && game.phase === 'throwing' && (
         <Button
-          label={game.pool.length > 0 ? t('game.throwAgain') : t('game.throw')}
+          label={game.pool.length > 0 && !rolling ? t('game.throwAgain') : t('game.throw')}
           size="large"
+          disabled={rolling}
           onPress={() => gameStore.getState().dispatch({ type: 'Throw', seat: seat.id })}
         />
       )}
@@ -209,7 +238,17 @@ function TurnControls({ game, seat, human, view, lastThrow, rollMs, styles, onTa
   );
 }
 
+/**
+ * One mounted view per game: Restart starts a new game id, which remounts the view so no
+ * animations, throw display or timers carry over from the previous game.
+ */
 export function GameScreen() {
+  const id = useGame((s) => s.game?.id);
+  if (!id) return <Redirect href="/" />;
+  return <GameView key={id} />;
+}
+
+function GameView() {
   const { t } = useTranslation();
   const router = useRouter();
   const { styles } = useThemedStyles(makeStyles);
@@ -226,25 +265,28 @@ export function GameScreen() {
   // Bot-only play runs at Fast automatically (R-UX-04).
   const fast = speedFast || (!!game && !humanStillPlaying(game));
   const timing = durations(fast);
-  const { callout, motions, motionDone, lastThrow, winner, clearWinner } = useEventFeedback();
-  // Bots wait while the winner is being celebrated.
-  useBotDriver(game, paused || winner !== null, fast);
+  const { callout, motions, motionDone, lastThrow, rolling, winner, celebrating, clearWinner } = useEventFeedback();
+  // Bots wait while the winner is being celebrated, and until the shells and pawns are still.
+  useBotDriver(game, paused || celebrating, rolling || motions.length > 0, fast);
 
   useEffect(() => {
     // Go to the results once the game is over and the celebration has been dismissed.
-    if (game?.phase === 'finished' && winner === null) router.replace('/result');
-  }, [game?.phase, winner, router]);
+    if (game?.phase === 'finished' && !celebrating) router.replace('/result');
+  }, [game?.phase, celebrating, router]);
 
   if (!game) return <Redirect href="/" />;
 
   const store = gameStore.getState();
   const seat = game.seats.find((s) => s.id === game.currentSeat)!;
   const human = seat.kind === 'human' && game.phase !== 'finished';
-  const view = selectionView(game, selectedThrowId, selectedPawnId);
+  const canAct = human && !rolling;
+  const selection = selectionView(game, selectedThrowId, selectedPawnId);
+  // What may be tapped: nothing for bots, or while the shells are still tumbling.
+  const view = canAct ? selection : { ...selection, movablePawnIds: [], playableThrowIds: [], preview: null };
   const tablet = width >= TABLET_MIN_WIDTH && width > height;
 
   const handle = (outcome: TapOutcome) => {
-    if (!human) return;
+    if (!canAct) return;
     switch (outcome.kind) {
       case 'move':
         store.dispatch(outcome.action);
@@ -269,7 +311,7 @@ export function GameScreen() {
       <Board
         state={game}
         size={boardSize}
-        view={human ? view : { ...view, movablePawnIds: [], preview: null }}
+        view={view}
         onPawnPress={(id) => handle(tapPawn(game, selectedThrowId, id))}
         onWaitingPress={() => handle(tapWaiting(game, selectedThrowId))}
         motions={motions}
@@ -289,9 +331,11 @@ export function GameScreen() {
       game={game}
       seat={seat}
       human={human}
+      canAct={canAct}
       view={view}
       lastThrow={lastThrow}
       rollMs={timing.shellsMs}
+      rolling={rolling}
       styles={styles}
       onTap={handle}
     />

@@ -1,7 +1,7 @@
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Alert, Pressable, Text, TextInput, View } from 'react-native';
+import { Pressable, Text, TextInput, View } from 'react-native';
 
 import {
   RULE_KEYS,
@@ -14,7 +14,7 @@ import {
   type SeatKind,
 } from '@/engine';
 import { BOT_LEVELS } from '@/bot';
-import { gameStore, useGame, useSettings } from '@/store/app';
+import { gameStore, useSettings } from '@/store/app';
 import { defaultRules } from '@/store/settings';
 import { Button, Screen, Segmented, Title } from '@/ui/common';
 import { firstSetup, nextColor, PLAYER_COUNTS, presetSeats, setKind, type PlayerCount } from '@/ui/setup/presets';
@@ -40,13 +40,16 @@ const makeStyles = (colors: Theme) => ({
   rule: { gap: 6 },
   ruleLabel: { color: colors.text, fontWeight: '600' as const },
   problem: { color: colors.danger, fontWeight: '600' as const },
+  hint: { color: colors.muted, fontSize: 14 },
 });
 
 export function SetupScreen() {
   const { t } = useTranslation();
   const router = useRouter();
+  // From Results ("Change players"), Save starts the next game straight away.
+  const { then } = useLocalSearchParams<{ then?: string }>();
+  const playNext = then === 'play';
   const { theme, styles } = useThemedStyles(makeStyles);
-  const saved = useGame((s) => s.saved);
   const innerRing = useSettings((s) => s.innerRing);
   // Start from the players and rules used last time (remembered between launches).
   const [initial] = useState(() => gameStore.getState().lastSetup ?? firstSetup(innerRing));
@@ -61,16 +64,18 @@ export function SetupScreen() {
   const update = (index: number, patch: Partial<SeatConfig>) =>
     setSeats((all) => all.map((s, i) => (i === index ? { ...s, ...patch } : s)));
 
-  const start = () => {
-    const begin = () => {
-      gameStore.getState().startGame({ seats, config: mode === 'classic' ? defaultRules({ innerRing }) : custom });
-      router.replace('/game');
-    };
-    if (!saved) return begin();
-    Alert.alert(t('setup.replaceTitle'), t('setup.replaceBody'), [
-      { text: t('common.cancel'), style: 'cancel' },
-      { text: t('setup.replace'), style: 'destructive', onPress: begin },
-    ]);
+  // Setup can be the first screen (a deep link, a web reload), so there may be nothing to go back to.
+  const leave = () => (router.canGoBack() ? router.back() : router.replace('/'));
+
+  // From Home, Save only remembers the choice and Play starts the game with it.
+  const save = () => {
+    const setup = { seats, config: mode === 'classic' ? defaultRules({ innerRing }) : custom };
+    if (!playNext) {
+      gameStore.getState().saveSetup(setup);
+      return leave();
+    }
+    gameStore.getState().startGame(setup);
+    router.replace('/game');
   };
 
   return (
@@ -160,8 +165,9 @@ export function SetupScreen() {
           {t(`setup.problem.${p}`)}
         </Text>
       ))}
-      <Button label={t('setup.start')} onPress={start} disabled={problems.length > 0} />
-      <Button label={t('common.back')} onPress={() => router.back()} variant="secondary" />
+      {!playNext && <Text style={styles.hint}>{t('setup.saveHint')}</Text>}
+      <Button label={t(playNext ? 'setup.saveAndPlay' : 'setup.save')} onPress={save} disabled={problems.length > 0} />
+      <Button label={t('common.cancel')} onPress={leave} variant="secondary" />
     </Screen>
   );
 }

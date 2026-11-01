@@ -7,6 +7,7 @@ import { CLASSIC } from '@/engine';
 import { game, place, rigged, seatsOf, withHit, withPool } from '@/engine/testing/fixtures';
 import { Board } from '@/ui/game/Board';
 import { messageFor, throwPhrase } from '@/ui/game/messages';
+import { durations } from '@/ui/game/motion';
 import { selectionView } from '@/ui/game/selection';
 import { GameScreen } from '@/ui/screens/GameScreen';
 import { gameStore } from '@/ui/testing/appStoreMock';
@@ -92,15 +93,26 @@ describe('Game screen (TASK-46, TASK-48)', () => {
     gameStore.getState().startGame({ seats: seatsOf(['human', 'empty', 'human', 'empty']), config: CLASSIC });
   });
 
-  it('shows whose turn it is and throws on tap (R-LOCAL-03, R-UI-01)', async () => {
+  it('shows whose turn it is and throws on tap, revealing each throw once the shells settle (R-LOCAL-03, R-UI-01)', async () => {
+    jest.useFakeTimers();
     gameStore.setState({ game: rigged(gameStore.getState().game!, [4, 2]) });
     await render(<GameScreen />);
     expect(screen.getByText('Your turn')).toBeTruthy();
     await fireEvent.press(screen.getByRole('button', { name: 'Throw' }));
-    expect(screen.getByRole('button', { name: 'Throw again' })).toBeTruthy();
+    // While the shells tumble, neither the chip nor "Throw again" gives the 4 away.
+    expect(screen.queryByLabelText('Throw of 4')).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Throw again' })).toBeNull();
+    expect(screen.getByRole('button', { name: 'Throw' })).toBeDisabled();
+    await act(() => {
+      jest.advanceTimersByTime(durations(false).shellsMs);
+    });
     await fireEvent.press(screen.getByRole('button', { name: 'Throw again' }));
+    await act(() => {
+      jest.advanceTimersByTime(durations(false).shellsMs);
+    });
     expect(screen.getByLabelText('Throw of 4')).toBeTruthy();
     expect(screen.getByLabelText('Throw of 2')).toBeDisabled();
+    jest.useRealTimers();
   });
 
   it('enters a pawn from the waiting area with a 4', async () => {
@@ -121,27 +133,81 @@ describe('Game screen (TASK-46, TASK-48)', () => {
     expect(mockRouter.replace).toHaveBeenCalledWith('/');
   });
 
-  it('celebrates the winner, then goes to the results on Continue', async () => {
+  it('celebrates the winner once the winning move has played, then goes to the results on Continue', async () => {
+    jest.useFakeTimers();
     const base = withHit(place(gameStore.getState().game!, { A0: 24, A1: 24, A2: 24, A3: 22 }), 'A');
     gameStore.setState({ game: withPool(base, [2]) });
     await render(<GameScreen />);
     await fireEvent.press(screen.getByLabelText('Red pawn 4, square 23, inner ring'));
+    // The pawn is still walking home: no overlay over the board yet, and no jump to the results.
+    expect(screen.queryByText('Player 1 wins!')).toBeNull();
+    expect(mockRouter.replace).not.toHaveBeenCalledWith('/result');
+    await act(() => {
+      jest.advanceTimersByTime(2 * durations(false).stepMs + 50);
+    });
+    jest.useRealTimers();
     expect(screen.getByText('Player 1 wins!')).toBeTruthy();
     expect(mockRouter.replace).not.toHaveBeenCalledWith('/result');
     await fireEvent.press(screen.getByRole('button', { name: 'Continue' }));
     expect(mockRouter.replace).toHaveBeenCalledWith('/result');
   });
 
+  it('a Chamma\'s reveal still happens when the next action lands while the shells roll', async () => {
+    jest.useFakeTimers();
+    gameStore.setState({ game: rigged(gameStore.getState().game!, [4, 2]) });
+    await render(<GameScreen />);
+    await act(() => {
+      gameStore.getState().dispatch({ type: 'Throw', seat: 'A' });
+    });
+    expect(screen.queryByText('Chamma! Throw again', { includeHiddenElements: true })).toBeNull();
+    // The 2 arrives before the 4's shells settle: the 4 is still called out, not lost.
+    // (The callout is hidden from screen readers, which get their own announcement.)
+    await act(() => {
+      gameStore.getState().dispatch({ type: 'Throw', seat: 'A' });
+    });
+    expect(screen.getByText('Chamma! Throw again', { includeHiddenElements: true })).toBeTruthy();
+    jest.useRealTimers();
+  });
+
+  it('Restart from the pause menu drops the previous game\'s throw', async () => {
+    jest.useFakeTimers();
+    // A 2 with every pawn still waiting: nothing to move, so the shells stay on show.
+    gameStore.setState({ game: rigged(gameStore.getState().game!, [2]) });
+    await render(<GameScreen />);
+    await fireEvent.press(screen.getByRole('button', { name: 'Throw' }));
+    await act(() => {
+      jest.advanceTimersByTime(durations(false).shellsMs);
+    });
+    expect(screen.getByLabelText(/^2: /)).toBeTruthy();
+    await fireEvent.press(screen.getByRole('button', { name: 'Pause' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Restart with same setup' }));
+    expect(screen.queryByLabelText(/^2: /)).toBeNull();
+    jest.useRealTimers();
+  });
+
   it('plays bot turns on its own after a short pause (R-BOT-02)', async () => {
     jest.useFakeTimers();
     gameStore.getState().startGame({ seats: seatsOf(['human', 'empty', 'bot', 'empty']), config: CLASSIC });
-    gameStore.setState({ game: { ...gameStore.getState().game!, currentSeat: 'C' } });
+    // A pawn already out and a rigged 2, so the bot's throw is followed by a move.
+    const out = rigged(place(gameStore.getState().game!, { C0: 3 }), [2]);
+    gameStore.setState({ game: { ...out, currentSeat: 'C' } });
     await render(<GameScreen />);
     const before = gameStore.getState().game;
     await act(() => {
       jest.advanceTimersByTime(1000);
     });
-    expect(gameStore.getState().game).not.toBe(before);
+    const thrown = gameStore.getState().game;
+    expect(thrown).not.toBe(before);
+    expect(thrown?.phase).toBe('moving');
+    // The shells roll, then the throw stays readable before the bot moves a pawn.
+    await act(() => {
+      jest.advanceTimersByTime(durations(false).shellsMs + 1000);
+    });
+    expect(gameStore.getState().game).toBe(thrown);
+    await act(() => {
+      jest.advanceTimersByTime(2000);
+    });
+    expect(gameStore.getState().game).not.toBe(thrown);
     jest.useRealTimers();
   });
 });

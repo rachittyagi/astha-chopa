@@ -48,6 +48,8 @@ export interface GameStore {
   loadSaved(): Promise<LoadResult>;
   /** Start a game; `seed` is only passed by the debug deep link. */
   startGame(setup: GameSetup, seed?: number): void;
+  /** Remember the players and rules for the next Play, without starting a game. */
+  saveSetup(setup: GameSetup): void;
   resume(): boolean;
   dispatch(action: Action): EngineError | null;
   /** Play the current bot's action, after advancing its stream for the delay already waited. */
@@ -105,6 +107,11 @@ export function createGameStore({ storage, now, newSeed }: GameStoreDeps) {
         const game = createGame(setup.seats, setup.config, seed ?? newSeed(), `game-${now()}`, now());
         set({ game, setup, lastSetup: setup, events: [], selectedThrowId: null, selectedPawnId: null, saved: game });
         void saveGame(storage, game);
+        void saveSetup(storage, setup);
+      },
+
+      saveSetup(setup) {
+        set({ lastSetup: setup });
         void saveSetup(storage, setup);
       },
 

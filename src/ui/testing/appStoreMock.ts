@@ -6,7 +6,9 @@ import { createGameStore, type GameStore } from '@/store/game';
 import { createSettingsStore, type SettingsStore } from '@/store/settings';
 
 let seed = 100;
-export const gameStore = createGameStore({ storage: memoryStore(), now: () => 1, newSeed: () => seed++ });
+// A ticking clock, so each new game gets its own id as it does on a device.
+let clock = 1;
+export const gameStore = createGameStore({ storage: memoryStore(), now: () => clock++, newSeed: () => seed++ });
 export const settingsStore = createSettingsStore(memoryStore());
 
 export function useGame<T>(select: (s: GameStore) => T): T {

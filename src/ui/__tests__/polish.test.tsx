@@ -15,11 +15,12 @@ import { createSettingsStore, defaultRules } from '@/store/settings';
 import { durations, motionsFor } from '@/ui/game/motion';
 import { HomeScreen } from '@/ui/screens/HomeScreen';
 import { HowToPlayScreen } from '@/ui/screens/HowToPlayScreen';
+import { ResultScreen } from '@/ui/screens/ResultScreen';
 import { SettingsScreen } from '@/ui/screens/SettingsScreen';
 import { gameStore, settingsStore } from '@/ui/testing/appStoreMock';
 
 const mockRouter = { push: jest.fn(), replace: jest.fn(), back: jest.fn() };
-jest.mock('expo-router', () => ({ useRouter: () => mockRouter, Redirect: () => null }));
+jest.mock('expo-router', () => ({ useRouter: () => mockRouter, useLocalSearchParams: () => ({}), Redirect: () => null }));
 jest.mock('@/store/app', () => require('@/ui/testing/appStoreMock'));
 jest.mock('react-native-safe-area-context', () => require('react-native-safe-area-context/jest/mock').default);
 
@@ -154,6 +155,37 @@ describe('Home starts the game directly', () => {
     await fireEvent.press(screen.getByRole('button', { name: 'Continue game' }));
     expect(gameStore.getState().game).toEqual(saved);
     expect(screen.getByRole('button', { name: 'New game' })).toBeTruthy();
+  });
+
+  it('with an unfinished game, lists that game\'s players, and the saved setup by New game when it differs', async () => {
+    const inGame = seatsOf(['human', 'empty', 'bot', 'empty']).map((s, i) => (i === 0 ? { ...s, name: 'Dada' } : s));
+    gameStore.getState().startGame({ seats: inGame, config: CLASSIC });
+    gameStore.setState({ game: null });
+    const first = await render(<HomeScreen />);
+    expect(screen.getByText('Dada')).toBeTruthy();
+    expect(screen.queryByText('New game players')).toBeNull();
+    await first.unmount();
+
+    const next = seatsOf(['human', 'empty', 'human', 'empty']).map((s, i) => (i === 0 ? { ...s, name: 'Nani' } : s));
+    gameStore.getState().saveSetup({ seats: next, config: CLASSIC });
+    await render(<HomeScreen />);
+    expect(screen.getByLabelText('Who is playing')).toHaveTextContent(/Dada/);
+    expect(screen.getByText('New game players')).toBeTruthy();
+    expect(screen.getByLabelText('New game players')).toHaveTextContent(/Nani/);
+  });
+});
+
+describe('Results screen', () => {
+  beforeEach(() => jest.clearAllMocks());
+
+  it('offers Change players, which opens Players & rules to save and play the next game', async () => {
+    gameStore.getState().startGame({ seats: seatsOf(['human', 'empty', 'human', 'empty']), config: CLASSIC });
+    const game = gameStore.getState().game!;
+    gameStore.setState({ game: { ...game, phase: 'finished', rankings: ['A', 'C'] } });
+    await render(<ResultScreen />);
+    expect(screen.queryByRole('button', { name: 'New game' })).toBeNull();
+    await fireEvent.press(screen.getByRole('button', { name: 'Change players' }));
+    expect(mockRouter.replace).toHaveBeenCalledWith({ pathname: '/setup', params: { then: 'play' } });
   });
 });
 

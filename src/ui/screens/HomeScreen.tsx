@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { Alert, Text, View } from 'react-native';
 
 import { APP_NAME } from '@/config/app';
+import type { SeatConfig } from '@/engine';
 import { gameStore, useGame, useSettings } from '@/store/app';
 import { Button, Screen } from '@/ui/common';
 import { SeatMark } from '@/ui/game/Controls';
@@ -19,10 +20,14 @@ const makeStyles = (c: Theme) => ({
   players: { flexDirection: 'row' as const, flexWrap: 'wrap' as const, justifyContent: 'center' as const, gap: 14 },
   player: { flexDirection: 'row' as const, alignItems: 'center' as const, gap: 6 },
   playerName: { fontSize: 18, color: c.text },
+  nextLabel: { fontSize: 14, color: c.muted, textAlign: 'center' as const },
   actions: { gap: 14, paddingBottom: 24, width: '100%' as const, maxWidth: 480, alignSelf: 'center' as const },
   links: { flexDirection: 'row' as const, gap: 12 },
   link: { flex: 1 },
 });
+
+const sameKey = (seats: readonly Pick<SeatConfig, 'kind' | 'name' | 'color'>[]) =>
+  JSON.stringify(seats.map(({ kind, name, color }) => [kind, name, color]));
 
 /** Home: one big button. Play starts straight away with the players and rules used last time. */
 export function HomeScreen() {
@@ -34,6 +39,10 @@ export function HomeScreen() {
   const problem = useGame((s) => s.saveProblem);
   const innerRing = useSettings((s) => s.innerRing);
   const setup = lastSetup ?? firstSetup(innerRing);
+  // With a game to continue, show who is in that game; the setup saved for the next one is
+  // shown by New game when it differs, so a saved change is visible before it is used.
+  const players = saved ? saved.seats : setup.seats;
+  const nextPlayers = saved && sameKey(saved.seats) !== sameKey(setup.seats) ? setup.seats : null;
 
   const play = () => {
     gameStore.getState().startGame(setup);
@@ -66,18 +75,7 @@ export function HomeScreen() {
         </Text>
       )}
       <View style={styles.actions}>
-        <View style={styles.players} accessible accessibilityLabel={t('home.whoPlays')}>
-          {setup.seats.map((seat, i) =>
-            seat.kind === 'empty' ? null : (
-              <View key={i} style={styles.player}>
-                <SeatMark seat={(['A', 'B', 'C', 'D'] as const)[i]!} color={seat.color} size={22} />
-                <Text style={styles.playerName}>
-                  {seat.kind === 'bot' ? t('home.computer', { name: seat.name }) : seat.name}
-                </Text>
-              </View>
-            ),
-          )}
-        </View>
+        <PlayerRow seats={players} label={t('home.whoPlays')} styles={styles} />
         {saved ? (
           <>
             <Button
@@ -87,6 +85,12 @@ export function HomeScreen() {
                 if (gameStore.getState().resume()) router.push('/game');
               }}
             />
+            {nextPlayers && (
+              <>
+                <Text style={styles.nextLabel}>{t('home.nextPlayers')}</Text>
+                <PlayerRow seats={nextPlayers} label={t('home.nextPlayers')} styles={styles} />
+              </>
+            )}
             <Button label={t('home.newGame')} variant="secondary" onPress={newGame} />
           </>
         ) : (
@@ -103,5 +107,31 @@ export function HomeScreen() {
         </View>
       </View>
     </Screen>
+  );
+}
+
+function PlayerRow({
+  seats,
+  label,
+  styles,
+}: {
+  seats: readonly Pick<SeatConfig, 'kind' | 'name' | 'color'>[];
+  label: string;
+  styles: ReturnType<typeof makeStyles>;
+}) {
+  const { t } = useTranslation();
+  return (
+    <View style={styles.players} accessible accessibilityLabel={label}>
+      {seats.map((seat, i) =>
+        seat.kind === 'empty' ? null : (
+          <View key={i} style={styles.player}>
+            <SeatMark seat={(['A', 'B', 'C', 'D'] as const)[i]!} color={seat.color} size={22} />
+            <Text style={styles.playerName}>
+              {seat.kind === 'bot' ? t('home.computer', { name: seat.name }) : seat.name}
+            </Text>
+          </View>
+        ),
+      )}
+    </View>
   );
 }

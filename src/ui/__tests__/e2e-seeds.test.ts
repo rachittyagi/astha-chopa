@@ -6,7 +6,7 @@ import { memoryStore } from '@/services/storage';
 import { createGameStore } from '@/store/game';
 import { presetSeats } from '@/ui/setup/presets';
 
-import { debugLinksEnabled, nearlyFinished } from '../../app/debug/new';
+import { debugLinksEnabled, nearlyFinished } from '@/debug/links';
 
 jest.mock('expo-constants', () => ({ expoConfig: { extra: { variant: 'development' } } }));
 jest.mock('@/store/app', () => require('@/ui/testing/appStoreMock'));

@@ -49,7 +49,11 @@ export function ResultScreen() {
             router.replace('/game');
           }}
         />
-        <Button label={t('result.newGame')} variant="secondary" onPress={() => router.replace('/setup')} />
+        <Button
+          label={t('result.changePlayers')}
+          variant="secondary"
+          onPress={() => router.replace({ pathname: '/setup', params: { then: 'play' } })}
+        />
         <Button
           label={t('result.home')}
           variant="secondary"

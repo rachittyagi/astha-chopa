@@ -15,11 +15,12 @@
     "newGame": "New game",
     "playersAndRules": "Players & rules",
     "computer": "{{name}} (computer)",
-    "whoPlays": "Who is playing"
+    "whoPlays": "Who is playing",
+    "nextPlayers": "New game players"
   },
   "setup": {
     "title": "Players & rules",
-    "players": "Players",
+    "players": "People playing on this phone",
     "playersCount": "{{count}}",
     "seat": {
       "A": "Bottom",
@@ -42,7 +43,9 @@
     "rules": "Rules",
     "classic": "Classic",
     "custom": "Custom",
-    "start": "Start",
+    "save": "Save",
+    "saveAndPlay": "Save and play",
+    "saveHint": "Saved players and rules are used the next time you tap Play or New game.",
     "problem": {
       "tooFewPlayers": "Choose at least 2 players.",
       "noHuman": "At least one player must be human.",
@@ -166,7 +169,7 @@
     "title": "Results",
     "place": "{{rank}}.",
     "playAgain": "Play again",
-    "newGame": "New game",
+    "changePlayers": "Change players",
     "home": "Home",
     "a11y": "Place {{rank}}: {{name}}"
   },

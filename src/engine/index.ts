@@ -6,7 +6,7 @@ export { CLASSIC, RULE_COMBINATIONS, RULE_KEYS, RULE_OPTIONS, configNumber, isVa
 export type { RuleConfig, RuleKey } from './config';
 export { legalMoves, movesWithValue } from './legal';
 export { isOuterSquare } from './doubles';
-export { checkInvariants } from './invariants';
+export { checkInvariants, pieceProblems } from './invariants';
 export { pawnsAt, squareOf, activeSeats } from './occupancy';
 export { applyAction, endGameNow, humanStillPlaying, LOG_LIMIT } from './reducer';
 export { createGame, validateSeats, PAWNS_PER_SEAT } from './setup';
