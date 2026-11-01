@@ -48,6 +48,28 @@ npx eas-cli@latest build --profile development
 
 Expo Go also works for a quick look; saves then fall back to AsyncStorage.
 
+### Run in a web browser (local, no ngrok)
+
+The fastest way to try the app is in a desktop browser. Everything runs on your machine; no tunnel (ngrok), account or device is needed.
+
+1. Install dependencies (once):
+
+   ```bash
+   npm install
+   ```
+
+2. Start the web dev server:
+
+   ```bash
+   npx expo start --web
+   ```
+
+   The app opens in your default browser at http://localhost:8081. If it does not open, visit that address yourself. Edits reload automatically. Press `Ctrl+C` to stop.
+
+3. Optional: to open it on a phone or tablet on the same Wi-Fi, use your computer's local IP instead of `localhost`, for example `http://192.168.1.20:8081`.
+
+On the web, saves use the browser's local storage, and sound and speech depend on the browser (click once on the page to allow audio).
+
 ## Checks
 
 ```bash
