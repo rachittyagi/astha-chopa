@@ -1,10 +1,10 @@
 import '@/i18n';
 
 import { act, fireEvent, render, screen } from '@testing-library/react-native';
-import { Alert } from 'react-native';
 import i18next from 'i18next';
 
 import { CLASSIC } from '@/engine';
+import * as feedback from '@/services/feedback';
 import { game, place, rigged, seatsOf, withHit, withPool } from '@/engine/testing/fixtures';
 import { Board } from '@/ui/game/Board';
 import { MoveChoice } from '@/ui/game/Controls';
@@ -144,7 +144,6 @@ describe('Game screen (TASK-46, TASK-48)', () => {
   });
 
   it('asks before ending a bot-only game', async () => {
-    const alert = jest.spyOn(Alert, 'alert').mockImplementation(() => undefined);
     gameStore.getState().startGame({ seats: seatsOf(['human', 'bot', 'bot', 'empty']), config: CLASSIC });
     // The human has finished; only the computer players are left.
     const g = place(gameStore.getState().game!, { A0: 24, A1: 24, A2: 24, A3: 24 });
@@ -154,10 +153,10 @@ describe('Game screen (TASK-46, TASK-48)', () => {
     await render(<GameScreen />);
     await fireEvent.press(screen.getByRole('button', { name: 'End now' }));
     expect(gameStore.getState().game?.phase).not.toBe('finished');
-    const buttons = alert.mock.calls[0]![2]!;
-    await act(() => buttons.find((b) => b.text === 'End now')!.onPress!());
+    expect(screen.getByText('End the game now?')).toBeTruthy();
+    // The sheet's own End now confirms (the first is the button that opened it).
+    await fireEvent.press(screen.getAllByRole('button', { name: 'End now' }).at(-1)!);
     expect(gameStore.getState().game?.phase).toBe('finished');
-    alert.mockRestore();
   });
 
   it('shows every callout in turn instead of only the last', async () => {
@@ -211,6 +210,17 @@ describe('Game screen (TASK-46, TASK-48)', () => {
     expect(gameStore.getState().game?.pawns.find((p) => p.id === 'A0')?.pathIndex).toBe(0);
   });
 
+  it('pause menu can quit without saving, after asking', async () => {
+    await render(<GameScreen />);
+    await fireEvent.press(screen.getByRole('button', { name: 'Pause' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Quit without saving' }));
+    expect(screen.getByText('Quit without saving?')).toBeTruthy();
+    await fireEvent.press(screen.getByRole('button', { name: 'Delete and quit' }));
+    expect(gameStore.getState().game).toBeNull();
+    expect(gameStore.getState().saved).toBeNull();
+    expect(mockRouter.replace).toHaveBeenCalledWith('/');
+  });
+
   it('pause menu quits to Home and keeps the game saved', async () => {
     await render(<GameScreen />);
     await fireEvent.press(screen.getByRole('button', { name: 'Pause' }));
@@ -223,6 +233,7 @@ describe('Game screen (TASK-46, TASK-48)', () => {
   });
 
   it('celebrates the winner once the winning move has played, then goes to the results on Continue', async () => {
+    const playSound = jest.spyOn(feedback, 'playSound');
     jest.useFakeTimers();
     const base = withHit(place(gameStore.getState().game!, { A0: 24, A1: 24, A2: 24, A3: 22 }), 'A');
     gameStore.setState({ game: withPool(base, [2]) });
@@ -236,6 +247,8 @@ describe('Game screen (TASK-46, TASK-48)', () => {
     });
     jest.useRealTimers();
     expect(screen.getByText('Player 1 wins!')).toBeTruthy();
+    // Applause as the winner's card appears.
+    expect(playSound).toHaveBeenCalledWith('clap', expect.anything());
     expect(mockRouter.replace).not.toHaveBeenCalledWith('/result');
     await fireEvent.press(screen.getByRole('button', { name: 'Continue' }));
     expect(mockRouter.replace).toHaveBeenCalledWith('/result');

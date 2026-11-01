@@ -1,11 +1,12 @@
 import { useRouter } from 'expo-router';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Alert, Pressable, Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 
 import { APP_NAME } from '@/config/app';
 import type { SeatConfig } from '@/engine';
 import { gameStore, useGame, useSettings } from '@/store/app';
-import { Button, Screen } from '@/ui/common';
+import { Button, ConfirmSheet, Screen } from '@/ui/common';
 import { SeatMark } from '@/ui/game/Controls';
 import { Cowrie } from '@/ui/game/Cowrie';
 import { firstSetup } from '@/ui/setup/presets';
@@ -60,11 +61,9 @@ export function HomeScreen() {
     gameStore.getState().startGame(setup);
     router.push('/game');
   };
-  const newGame = () =>
-    Alert.alert(t('setup.replaceTitle'), t('setup.replaceBody'), [
-      { text: t('common.cancel'), style: 'cancel' },
-      { text: t('setup.replace'), style: 'destructive', onPress: play },
-    ]);
+  // New game replaces the unfinished one, so it asks first.
+  const [confirmReplace, setConfirmReplace] = useState(false);
+  const newGame = () => setConfirmReplace(true);
 
   return (
     <Screen>
@@ -126,6 +125,17 @@ export function HomeScreen() {
           </View>
         </View>
       </View>
+      <ConfirmSheet
+        visible={confirmReplace}
+        title={t('setup.replaceTitle')}
+        body={t('setup.replaceBody')}
+        confirmLabel={t('setup.replace')}
+        onConfirm={() => {
+          setConfirmReplace(false);
+          play();
+        }}
+        onCancel={() => setConfirmReplace(false)}
+      />
     </Screen>
   );
 }

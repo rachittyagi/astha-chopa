@@ -2,14 +2,14 @@ import { Redirect, useRouter } from 'expo-router';
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import type { TFunction } from 'i18next';
 import { useTranslation } from 'react-i18next';
-import { AccessibilityInfo, Alert, Modal, ScrollView, Text, useWindowDimensions, View } from 'react-native';
+import { AccessibilityInfo, Modal, ScrollView, Text, useWindowDimensions, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { botDelay } from '@/bot';
 import { humanStillPlaying, RULE_KEYS, type GameState, type Seat, type SeatId, type Throw } from '@/engine';
 import { cuesFor, playCues, playSound, speak, specialThrowSound } from '@/services/feedback';
 import { gameStore, settingsStore, useGame, useSettings } from '@/store/app';
-import { Button, Title } from '@/ui/common';
+import { Button, ConfirmSheet, Title } from '@/ui/common';
 import { Board } from '@/ui/game/Board';
 import { Celebration } from '@/ui/game/Celebration';
 import { MoveChoice, PoolChips, SeatMark, seatStatus, SeatStatus, Shells, TurnBanner } from '@/ui/game/Controls';
@@ -347,7 +347,9 @@ function GameView() {
   const [choice, setChoice] = useState<Extract<TapOutcome, { kind: 'choose' }> | null>(null);
   const [paused, setPaused] = useState(false);
   const [showRules, setShowRules] = useState(false);
-  const [confirmRestart, setConfirmRestart] = useState(false);
+  // Pause asks before a step that loses the game: restarting it, or quitting without saving.
+  const [confirm, setConfirm] = useState<'restart' | 'discard' | null>(null);
+  const [confirmEnd, setConfirmEnd] = useState(false);
   // Height left for the board on phones, measured once the banner, status and controls are laid out.
   const [slot, setSlot] = useState<number | null>(null);
 
@@ -418,11 +420,7 @@ function GameView() {
       )}
     </View>
   );
-  const endGameNow = () =>
-    Alert.alert(t('game.endNowTitle'), t('game.endNowBody'), [
-      { text: t('common.cancel'), style: 'cancel' },
-      { text: t('game.endNowConfirm'), style: 'destructive', onPress: () => store.endNow() },
-    ]);
+  const endGameNow = () => setConfirmEnd(true);
   const endNow = !humanStillPlaying(game) && game.phase !== 'finished' && (
     <Button label={t('game.endNow')} onPress={endGameNow} variant="secondary" />
   );
@@ -507,29 +505,35 @@ function GameView() {
         transparent
         visible={paused}
         animationType="fade"
-        onRequestClose={() => (confirmRestart ? setConfirmRestart(false) : setPaused(false))}
+        onRequestClose={() => (confirm ? setConfirm(null) : setPaused(false))}
       >
         <View style={styles.overlay}>
-          {confirmRestart ? (
+          {confirm ? (
             <View style={styles.sheet}>
-              <Title>{t('pause.restartTitle')}</Title>
-              <Text style={styles.confirm}>{t('pause.restartBody')}</Text>
+              <Title>{t(confirm === 'restart' ? 'pause.restartTitle' : 'pause.discardTitle')}</Title>
+              <Text style={styles.confirm}>{t(confirm === 'restart' ? 'pause.restartBody' : 'pause.discardBody')}</Text>
               <Button
-                label={t('pause.restartConfirm')}
+                label={t(confirm === 'restart' ? 'pause.restartConfirm' : 'pause.discardConfirm')}
                 onPress={() => {
-                  if (setup) store.startGame(setup);
-                  setConfirmRestart(false);
+                  setConfirm(null);
                   setPaused(false);
+                  if (confirm === 'restart') {
+                    if (setup) store.startGame(setup);
+                    return;
+                  }
+                  // Delete the save, then leave: Home then offers Play, not Continue.
+                  void store.discardSaved();
+                  router.replace('/');
                 }}
               />
-              <Button label={t('common.cancel')} variant="secondary" onPress={() => setConfirmRestart(false)} />
+              <Button label={t('common.cancel')} variant="secondary" onPress={() => setConfirm(null)} />
             </View>
           ) : (
             // Scrolls when the rules summary or large text makes it taller than the screen.
             <ScrollView style={styles.sheet} contentContainerStyle={styles.sheetScroll}>
               <Title>{t('pause.title')}</Title>
               <Button label={t('pause.resume')} onPress={() => setPaused(false)} />
-              <Button label={t('pause.restart')} variant="secondary" onPress={() => setConfirmRestart(true)} />
+              <Button label={t('pause.restart')} variant="secondary" onPress={() => setConfirm('restart')} />
               <Button label={t('pause.rules')} variant="secondary" onPress={() => setShowRules((v) => !v)} />
               {showRules &&
                 RULE_KEYS.map((key) => (
@@ -557,10 +561,22 @@ function GameView() {
                   router.replace('/');
                 }}
               />
+              <Button label={t('pause.discard')} variant="secondary" onPress={() => setConfirm('discard')} />
             </ScrollView>
           )}
         </View>
       </Modal>
+      <ConfirmSheet
+        visible={confirmEnd}
+        title={t('game.endNowTitle')}
+        body={t('game.endNowBody')}
+        confirmLabel={t('game.endNowConfirm')}
+        onConfirm={() => {
+          setConfirmEnd(false);
+          store.endNow();
+        }}
+        onCancel={() => setConfirmEnd(false)}
+      />
     </>
   );
 

@@ -1,7 +1,7 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Alert, Pressable, Text, TextInput, View } from 'react-native';
+import { Pressable, Text, TextInput, View } from 'react-native';
 
 import {
   RULE_KEYS,
@@ -16,7 +16,7 @@ import {
 import { BOT_LEVELS } from '@/bot';
 import { gameStore, settingsStore, useSettings } from '@/store/app';
 import { defaultRules, type Settings } from '@/store/settings';
-import { Button, ChoiceRow, Header, Screen, Segmented } from '@/ui/common';
+import { Button, ChoiceRow, ConfirmSheet, Header, Screen, Segmented } from '@/ui/common';
 import { firstSetup, nextColor, PLAYER_COUNTS, presetSeats, setKind, type PlayerCount } from '@/ui/setup/presets';
 import { font, MIN_TOUCH, PAWN_COLORS, radius, space, useThemedStyles, type Theme } from '@/ui/theme';
 
@@ -99,12 +99,10 @@ export function SetupScreen() {
   };
 
   // Starting now replaces an unfinished game, so ask first, as Home's New game does.
+  const [confirmReplace, setConfirmReplace] = useState(false);
   const saveAndPlay = () => {
     if (playNext || !gameStore.getState().saved) return play();
-    Alert.alert(t('setup.replaceTitle'), t('setup.replaceBody'), [
-      { text: t('common.cancel'), style: 'cancel' },
-      { text: t('setup.replace'), style: 'destructive', onPress: play },
-    ]);
+    setConfirmReplace(true);
   };
 
   return (
@@ -219,6 +217,17 @@ export function SetupScreen() {
       <Button label={t('setup.saveAndPlay')} onPress={saveAndPlay} disabled={problems.length > 0} />
       {!playNext && <Button label={t('setup.save')} onPress={save} variant="secondary" disabled={problems.length > 0} />}
       <Button label={t('common.cancel')} onPress={leave} variant="secondary" />
+      <ConfirmSheet
+        visible={confirmReplace}
+        title={t('setup.replaceTitle')}
+        body={t('setup.replaceBody')}
+        confirmLabel={t('setup.replace')}
+        onConfirm={() => {
+          setConfirmReplace(false);
+          play();
+        }}
+        onCancel={() => setConfirmReplace(false)}
+      />
     </Screen>
   );
 }

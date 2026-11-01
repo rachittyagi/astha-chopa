@@ -72,6 +72,7 @@ const makeStyles = (c: Theme) => ({
     alignSelf: 'center' as const,
   },
   sheetTitle: { fontSize: 22, fontWeight: '800' as const, color: c.text, marginBottom: 4 },
+  sheetBody: { fontSize: font.body - 1, lineHeight: 24, color: c.text, marginBottom: space.xs },
   option: {
     minHeight: 52,
     flexDirection: 'row' as const,
@@ -275,6 +276,44 @@ export function ChoiceRow<T extends string | boolean>({
         </View>
       </Modal>
     </>
+  );
+}
+
+/**
+ * Asks before something that cannot be undone. Drawn by the app itself rather than the system
+ * alert, so it looks the same and works everywhere (the system alert does nothing on web).
+ */
+export function ConfirmSheet({
+  visible,
+  title,
+  body,
+  confirmLabel,
+  onConfirm,
+  onCancel,
+}: {
+  visible: boolean;
+  title: string;
+  body: string;
+  confirmLabel: string;
+  onConfirm(): void;
+  onCancel(): void;
+}) {
+  const { t } = useTranslation();
+  const { styles } = useThemedStyles(makeStyles);
+  return (
+    <Modal transparent visible={visible} animationType="fade" onRequestClose={onCancel}>
+      <View style={styles.overlay}>
+        <Pressable style={StyleSheet.absoluteFill} onPress={onCancel} accessible={false} />
+        <View style={styles.sheet} accessibilityViewIsModal>
+          <Text style={styles.sheetTitle} accessibilityRole="header">
+            {title}
+          </Text>
+          <Text style={styles.sheetBody}>{body}</Text>
+          <Button label={confirmLabel} onPress={onConfirm} />
+          <Button label={t('common.cancel')} variant="secondary" onPress={onCancel} />
+        </View>
+      </View>
+    </Modal>
   );
 }
 

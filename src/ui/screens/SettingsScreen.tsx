@@ -1,9 +1,10 @@
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Alert, Pressable, Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 
 import { gameStore, settingsStore, useGame, useSettings } from '@/store/app';
 import type { Settings } from '@/store/settings';
-import { Button, Header, Screen, Segmented, Toggle } from '@/ui/common';
+import { Button, ConfirmSheet, Header, Screen, Segmented, Toggle } from '@/ui/common';
 import { font, radius, space, THEMES as PALETTES, useThemedStyles, type Theme } from '@/ui/theme';
 
 const THEMES: Settings['theme'][] = ['festive', 'chalk', 'wood', 'flat'];
@@ -62,11 +63,11 @@ export function SettingsScreen() {
   const saved = useGame((s) => s.saved);
   const update = (patch: Partial<Settings>) => settingsStore.getState().update(patch);
 
-  const reset = () =>
-    Alert.alert(t('settings.resetTitle'), t('settings.resetBody'), [
-      { text: t('common.cancel'), style: 'cancel' },
-      { text: t('settings.reset'), style: 'destructive', onPress: () => void gameStore.getState().discardSaved() },
-    ]);
+  const [confirmReset, setConfirmReset] = useState(false);
+  const reset = () => {
+    setConfirmReset(false);
+    void gameStore.getState().discardSaved();
+  };
 
   return (
     <Screen scroll>
@@ -120,7 +121,15 @@ export function SettingsScreen() {
         />
       </View>
 
-      {saved && <Button label={t('settings.reset')} variant="secondary" onPress={reset} />}
+      {saved && <Button label={t('settings.reset')} variant="secondary" onPress={() => setConfirmReset(true)} />}
+      <ConfirmSheet
+        visible={confirmReset}
+        title={t('settings.resetTitle')}
+        body={t('settings.resetBody')}
+        confirmLabel={t('settings.reset')}
+        onConfirm={reset}
+        onCancel={() => setConfirmReset(false)}
+      />
     </Screen>
   );
 }

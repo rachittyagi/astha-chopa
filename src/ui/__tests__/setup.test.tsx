@@ -1,7 +1,6 @@
 import '@/i18n';
 
-import { act, fireEvent, render, screen } from '@testing-library/react-native';
-import { Alert } from 'react-native';
+import { fireEvent, render, screen } from '@testing-library/react-native';
 
 import { CLASSIC } from '@/engine';
 import { nextColor, presetSeats, setKind } from '@/ui/setup/presets';
@@ -136,15 +135,13 @@ describe('Game setup screen (TASK-44)', () => {
     gameStore.getState().startGame({ seats: presetSeats(2), config: CLASSIC });
     const unfinished = gameStore.getState().game;
     gameStore.setState({ game: null });
-    const alert = jest.spyOn(Alert, 'alert').mockImplementation(() => undefined);
     await render(<SetupScreen />);
     await fireEvent.press(screen.getByRole('button', { name: 'Save and play' }));
+    expect(screen.getByText('Replace your saved game?')).toBeTruthy();
     expect(mockRouter.replace).not.toHaveBeenCalled();
-    const buttons = alert.mock.calls[0]![2]!;
-    await act(() => buttons.find((b) => b.text === 'Replace')!.onPress!());
+    await fireEvent.press(screen.getByRole('button', { name: 'Replace' }));
     expect(gameStore.getState().game?.id).not.toBe(unfinished?.id);
     expect(mockRouter.replace).toHaveBeenCalledWith('/game');
-    alert.mockRestore();
   });
 
   it('Classic rules offer the inner-ring choice, which also becomes the default', async () => {
@@ -160,14 +157,13 @@ describe('Game setup screen (TASK-44)', () => {
   it('cancelling the replace question leaves the inner-ring default alone', async () => {
     gameStore.getState().startGame({ seats: presetSeats(2), config: CLASSIC });
     gameStore.setState({ game: null });
-    const alert = jest.spyOn(Alert, 'alert').mockImplementation(() => undefined);
     await render(<SetupScreen />);
     await fireEvent.press(screen.getByRole('button', { name: 'Inner ring: Open from the start' }));
     await fireEvent.press(screen.getByRole('radio', { name: 'Needs a hit first' }));
     await fireEvent.press(screen.getByRole('button', { name: 'Save and play' }));
-    expect(alert).toHaveBeenCalled();
+    await fireEvent.press(screen.getAllByRole('button', { name: 'Cancel' }).at(-1)!);
+    expect(gameStore.getState().game).toBeNull();
     expect(settingsStore.getState().innerRing).toBe('open');
-    alert.mockRestore();
   });
 
   it('labels each seat\'s name, colour and computer level', async () => {

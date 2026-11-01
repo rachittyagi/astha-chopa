@@ -4,6 +4,8 @@ import { useTranslation } from 'react-i18next';
 import { AccessibilityInfo, Animated, Easing, Modal, Platform, Text, useWindowDimensions, View } from 'react-native';
 
 import type { Seat } from '@/engine';
+import { playSound } from '@/services/feedback';
+import { settingsStore } from '@/store/app';
 import { Button, useReduceMotion } from '@/ui/common';
 import { SeatMark } from '@/ui/game/Controls';
 import { Trophy } from '@/ui/game/Trophy';
@@ -59,9 +61,17 @@ export function Celebration({ seat, onDone }: { seat: Seat | null; onDone(): voi
     })),
   );
 
+  // Once per winner: announced, and applauded as the card appears (the fanfare already played
+  // on the winning move). Kept apart from the confetti, which restarts if the motion setting changes.
+  const winnerName = seat?.name;
+  useEffect(() => {
+    if (winnerName === undefined) return;
+    AccessibilityInfo.announceForAccessibility(t('game.celebrate.title', { name: winnerName }));
+    playSound('clap', settingsStore.getState());
+  }, [winnerName, t]);
+
   useEffect(() => {
     if (!seat) return;
-    AccessibilityInfo.announceForAccessibility(t('game.celebrate.title', { name: seat.name }));
     fall.setValue(0);
     if (reduceMotion) return;
     const animation = Animated.loop(
@@ -75,7 +85,7 @@ export function Celebration({ seat, onDone }: { seat: Seat | null; onDone(): voi
     );
     animation.start();
     return () => animation.stop();
-  }, [seat, fall, t, reduceMotion]);
+  }, [seat, fall, reduceMotion]);
 
   if (!seat) return null;
   const colors = [PAWN_COLORS[seat.color]!, ...FESTIVE];

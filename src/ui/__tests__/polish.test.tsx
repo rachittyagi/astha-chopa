@@ -50,7 +50,7 @@ describe('animations from events (TASK-51, R-UI-05)', () => {
 });
 
 describe('sound and haptic cues (TASK-54, R-UX-03)', () => {
-  it('throw, step, hit, a clap for home and a fanfare for the winner', () => {
+  it('throw, step, hit, a whistle for home and a fanfare for the winner', () => {
     const thrown = { id: 1, value: 2 as const, shells: [true, true, false, false] as const, bonus: false };
     const events: GameEvent[] = [
       { type: 'ThrowResolved', seat: 'A', throw: thrown },
@@ -59,7 +59,7 @@ describe('sound and haptic cues (TASK-54, R-UX-03)', () => {
       { type: 'PawnHome', pawnId: 'A1' },
       { type: 'PlayerFinished', seat: 'A', rank: 1 },
     ];
-    expect(cuesFor(events)).toEqual({ sounds: ['throw', 'step', 'hit', 'clap', 'win'], haptics: ['throw', 'hit'] });
+    expect(cuesFor(events)).toEqual({ sounds: ['throw', 'step', 'hit', 'whistle', 'win'], haptics: ['throw', 'hit'] });
   });
 
   it('only the first place gets the fanfare', () => {
@@ -247,6 +247,19 @@ describe('Settings screen (TASK-61, TASK-53)', () => {
     expect(settingsStore.getState().sound).toBe(false);
     await fireEvent.press(screen.getByText('Fast'));
     expect(settingsStore.getState().speed).toBe('fast');
+  });
+
+  it('Reset saved game asks, then deletes the saved game', async () => {
+    gameStore.getState().startGame({ seats: seatsOf(['human', 'empty', 'bot', 'empty']), config: CLASSIC });
+    gameStore.getState().quit();
+    await render(<SettingsScreen />);
+    await fireEvent.press(screen.getByRole('button', { name: 'Reset saved game' }));
+    expect(screen.getByText('Reset saved game?')).toBeTruthy();
+    expect(gameStore.getState().saved).not.toBeNull();
+    // The sheet's confirm button carries the same name as the one that opened it.
+    await fireEvent.press(screen.getAllByRole('button', { name: 'Reset saved game' }).at(-1)!);
+    expect(gameStore.getState().saved).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Reset saved game' })).toBeNull();
   });
 
   it('offers to reset a saved game only when one exists', async () => {

@@ -185,7 +185,11 @@
     "ruleLine": "{{label}}: {{value}}",
     "restartTitle": "Restart this game?",
     "restartBody": "The game in progress will be lost. Everyone starts again with the same players and rules.",
-    "restartConfirm": "Restart"
+    "restartConfirm": "Restart",
+    "discard": "Quit without saving",
+    "discardTitle": "Quit without saving?",
+    "discardBody": "This game will be deleted. You won’t be able to come back to it.",
+    "discardConfirm": "Delete and quit"
   },
   "result": {
     "title": "Results",
