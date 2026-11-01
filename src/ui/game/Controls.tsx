@@ -1,7 +1,7 @@
 // Smaller game-screen pieces: seat marks, seat status, shells, pool chips, turn banner, move choice.
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Animated, Modal, Platform, Pressable, Text, View } from 'react-native';
+import { Animated, Modal, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import type { GameState, Seat, SeatId, Throw } from '@/engine';
 import type { TFunction } from 'i18next';
@@ -277,7 +277,8 @@ export function TurnBanner({ seat, hint }: { seat: Seat; hint?: string | null })
   const fill = PAWN_COLORS[seat.color]!;
   const ink = { color: textOn(fill) };
   return (
-    <View style={[styles.banner, { backgroundColor: fill }]} accessibilityRole="header" accessibilityLiveRegion="polite">
+    // Not a live region: turn changes are announced once by the game screen, and the hint changes on every tap.
+    <View style={[styles.banner, { backgroundColor: fill }]} accessibilityRole="header">
       <Text style={[styles.bannerName, ink]}>{seat.name}</Text>
       <Text style={[styles.bannerTurn, ink]} numberOfLines={2}>
         {seat.kind === 'bot' ? t('game.botThinking') : (hint ?? t('game.yourTurn'))}
@@ -301,7 +302,9 @@ export function MoveChoice({
   const { styles } = useThemedStyles(makeStyles);
   return (
     <Modal transparent visible={visible} animationType="fade" onRequestClose={onCancel}>
-      <Pressable style={styles.overlay} onPress={onCancel}>
+      <View style={styles.overlay}>
+        {/* The dimmed backdrop cancels; the sheet sits above it, so taps on its text do not. */}
+        <Pressable style={StyleSheet.absoluteFill} onPress={onCancel} accessible={false} />
         <View style={styles.sheet}>
           <Text style={styles.sheetTitle} accessibilityRole="header">
             {t('game.doubleTitle')}
@@ -311,7 +314,7 @@ export function MoveChoice({
           <Button label={t('game.moveBoth')} onPress={onBoth} />
           <Button label={t('common.cancel')} onPress={onCancel} variant="secondary" />
         </View>
-      </Pressable>
+      </View>
     </Modal>
   );
 }

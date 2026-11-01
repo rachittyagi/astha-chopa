@@ -7,6 +7,7 @@ import i18next from 'i18next';
 import { CLASSIC } from '@/engine';
 import { game, place, rigged, seatsOf, withHit, withPool } from '@/engine/testing/fixtures';
 import { Board } from '@/ui/game/Board';
+import { MoveChoice } from '@/ui/game/Controls';
 import { messageFor, throwPhrase } from '@/ui/game/messages';
 import { durations } from '@/ui/game/motion';
 import { selectionView } from '@/ui/game/selection';
@@ -51,6 +52,18 @@ describe('Board (TASK-45)', () => {
     await fireEvent.press(screen.getByLabelText('Red pawn 4, waiting on the start square'));
     expect(onWaitingPress).toHaveBeenCalled();
     expect(screen.getByLabelText('Yellow pawn 1, waiting on the start square')).toBeDisabled();
+  });
+});
+
+describe('Move one / Move both', () => {
+  it('explains the choice, and tapping its text does not cancel it', async () => {
+    const onCancel = jest.fn();
+    await render(<MoveChoice visible onOne={jest.fn()} onBoth={jest.fn()} onCancel={onCancel} />);
+    await fireEvent.press(screen.getByText('Move the double?'));
+    await fireEvent.press(screen.getByText(/Two of your pawns share this square/));
+    expect(onCancel).not.toHaveBeenCalled();
+    await fireEvent.press(screen.getByRole('button', { name: 'Cancel' }));
+    expect(onCancel).toHaveBeenCalledTimes(1);
   });
 });
 

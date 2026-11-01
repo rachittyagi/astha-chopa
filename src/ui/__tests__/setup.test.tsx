@@ -157,6 +157,19 @@ describe('Game setup screen (TASK-44)', () => {
     settingsStore.setState({ innerRing: 'open' });
   });
 
+  it('cancelling the replace question leaves the inner-ring default alone', async () => {
+    gameStore.getState().startGame({ seats: presetSeats(2), config: CLASSIC });
+    gameStore.setState({ game: null });
+    const alert = jest.spyOn(Alert, 'alert').mockImplementation(() => undefined);
+    await render(<SetupScreen />);
+    await fireEvent.press(screen.getByRole('button', { name: 'Inner ring: Open from the start' }));
+    await fireEvent.press(screen.getByRole('radio', { name: 'Needs a hit first' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Save and play' }));
+    expect(alert).toHaveBeenCalled();
+    expect(settingsStore.getState().innerRing).toBe('open');
+    alert.mockRestore();
+  });
+
   it('labels each seat\'s name, colour and computer level', async () => {
     await render(<SetupScreen />);
     expect(screen.getByRole('button', { name: 'Colour: Red' })).toBeTruthy();

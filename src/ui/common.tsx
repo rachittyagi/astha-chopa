@@ -1,6 +1,6 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
-import { AccessibilityInfo, Modal, Pressable, ScrollView, Switch, Text, View } from 'react-native';
+import { AccessibilityInfo, Modal, Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useRouter } from 'expo-router';
@@ -244,6 +244,8 @@ export function ChoiceRow<T extends string | boolean>({
       </Pressable>
       <Modal transparent visible={open} animationType="fade" onRequestClose={close}>
         <View style={styles.overlay}>
+          {/* Tapping the dimmed backdrop closes, as in the game's sheets. */}
+          <Pressable style={StyleSheet.absoluteFill} onPress={close} accessible={false} />
           <ScrollView style={styles.sheet} contentContainerStyle={{ gap: 8 }}>
             <Text style={styles.sheetTitle} accessibilityRole="header">
               {label}

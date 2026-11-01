@@ -78,19 +78,22 @@ export function SetupScreen() {
   // Setup can be the first screen (a deep link, a web reload), so there may be nothing to go back to.
   const leave = () => (router.canGoBack() ? router.back() : router.replace('/'));
 
-  const chosen = () => {
-    // The Classic inner-ring choice is also the default for later games and How to play.
+  const chosen = () => ({ seats, config: mode === 'classic' ? defaultRules({ innerRing: ring }) : custom });
+  // The Classic inner-ring choice also becomes the default for later games and How to play,
+  // once the user has committed to it (not when they cancel the replace question).
+  const keepRing = () => {
     if (mode === 'classic') settingsStore.getState().update({ innerRing: ring });
-    return { seats, config: mode === 'classic' ? defaultRules({ innerRing: ring }) : custom };
   };
 
   // Save only remembers the choice; Home's Play then starts a game with it.
   const save = () => {
+    keepRing();
     gameStore.getState().saveSetup(chosen());
     leave();
   };
 
   const play = () => {
+    keepRing();
     gameStore.getState().startGame(chosen());
     router.replace('/game');
   };

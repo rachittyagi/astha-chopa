@@ -142,12 +142,18 @@ function useEventFeedback() {
   );
 
   const current = callouts[0];
-  const queued = callouts.length > 1;
+  // Each callout is timed once, from when it appears: one arriving later does not restart it.
+  const waiting = useRef(0);
   useEffect(() => {
-    if (!current) return;
-    const timer = setTimeout(() => setCallouts((queue) => queue.slice(1)), queued ? QUEUED_CALLOUT_MS : CALLOUT_MS);
+    waiting.current = callouts.length - 1;
+  }, [callouts]);
+  const currentId = current?.id;
+  useEffect(() => {
+    if (currentId === undefined) return;
+    const ms = waiting.current > 0 ? QUEUED_CALLOUT_MS : CALLOUT_MS;
+    const timer = setTimeout(() => setCallouts((queue) => queue.slice(1)), ms);
     return () => clearTimeout(timer);
-  }, [current, queued]);
+  }, [currentId]);
   const callout = current?.text ?? null;
 
   const motionDone = useCallback((id: number) => setMotions((queue) => queue.filter((m) => m.id !== id)), []);

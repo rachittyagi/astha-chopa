@@ -66,7 +66,7 @@ export const THEMES: Record<ThemeName, Theme> = {
   wood: {
     background: '#f3e6cf',
     surface: '#fffaf0',
-    // Light maple, so pawns of every colour but yellow and orange stand out by fill as well as outline.
+    // Light maple: red, blue and purple pawns stand out by fill (≥3:1); the dark outline carries the rest.
     board: '#e8c99a',
     boardLine: '#4a2e14',
     safeMark: '#4a2e14',
