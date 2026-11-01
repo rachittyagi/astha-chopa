@@ -13,6 +13,7 @@ import {
   type Pawn,
   type Square,
 } from '@/engine';
+import { useReduceMotion } from '@/ui/common';
 import { textOn } from '@/ui/contrast';
 import { PAWN_COLORS, SEAT_SHAPES, useThemedStyles, type Theme } from '@/ui/theme';
 
@@ -37,6 +38,10 @@ const ROWS = [0, 1, 2, 3, 4];
 const keyOf = ([r, c]: Square) => r * 5 + c;
 const useNative = Platform.OS !== 'web';
 const BORDER = 3;
+/** The halo round a movable pawn, relative to the pawn; smaller when pawns share a square. */
+const HALO = 1.4;
+const CROWDED_HALO = 1.2;
+const PULSE_MS = 650;
 
 /** One pawn as drawn: every pawn gets its own token, so stacks are easy to count. */
 interface Token {
@@ -99,6 +104,13 @@ const makeStyles = (c: Theme) => ({
     borderColor: c.pawnOutline,
   },
   movable: { borderColor: c.highlight, borderWidth: 3 },
+  // Shape and motion, not just colour, mark a movable pawn (R-UX-02).
+  halo: {
+    position: 'absolute' as const,
+    borderWidth: 3,
+    borderColor: c.highlight,
+    backgroundColor: c.preview,
+  },
   waiting: { opacity: 0.7, borderStyle: 'dashed' as const, borderColor: c.boardLine },
   label: { fontWeight: '700' as const },
 });
@@ -121,6 +133,26 @@ export function Board({
   const movable = new Set(view.movablePawnIds);
   const active = motions[0];
   const [progress] = useState(() => new Animated.Value(0));
+  const [pulse] = useState(() => new Animated.Value(0));
+  const reduceMotion = useReduceMotion();
+  const anyTappable = movable.size > 0 || view.canEnter;
+
+  useEffect(() => {
+    pulse.setValue(0);
+    if (!anyTappable || reduceMotion) return;
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulse, { toValue: 1, duration: PULSE_MS, easing: Easing.inOut(Easing.quad), useNativeDriver: useNative }),
+        Animated.timing(pulse, { toValue: 0, duration: PULSE_MS, easing: Easing.inOut(Easing.quad), useNativeDriver: useNative }),
+      ]),
+    );
+    loop.start();
+    return () => loop.stop();
+  }, [anyTappable, reduceMotion, pulse]);
+  const haloMotion = {
+    opacity: pulse.interpolate({ inputRange: [0, 1], outputRange: [1, 0.55] }),
+    transform: [{ scale: pulse.interpolate({ inputRange: [0, 1], outputRange: [1, 1.15] }) }],
+  };
 
   useEffect(() => {
     if (!active) return;
@@ -223,12 +255,29 @@ export function Board({
         const radius = shape === 'circle' ? tokenSize / 2 : shape === 'rounded' ? tokenSize / 3 : tokenSize * 0.12;
         const turn = shape === 'diamond' ? [{ rotate: '45deg' }] : [];
         const inner = shape === 'diamond' ? tokenSize * 0.78 : tokenSize;
+        const halo = tokenSize * (grid === 1 ? HALO : CROWDED_HALO);
 
         return (
           <Animated.View
             key={tok.pawn.id}
             style={{ position: 'absolute', left, top, width: tokenSize, height: tokenSize, transform: translate }}
           >
+            {tappable && (
+              <Animated.View
+                pointerEvents="none"
+                style={[
+                  styles.halo,
+                  {
+                    width: halo,
+                    height: halo,
+                    borderRadius: halo / 2,
+                    left: (tokenSize - halo) / 2,
+                    top: (tokenSize - halo) / 2,
+                  },
+                  haloMotion,
+                ]}
+              />
+            )}
             <Pressable
               disabled={!tappable}
               onPress={() => (canEnter ? onWaitingPress?.() : onPawnPress(tok.pawn.id))}

@@ -6,15 +6,39 @@ import { PAWNS_PER_SEAT } from './setup';
 import { THROW_VALUES } from './throws';
 import type { Action, GameState } from './types';
 
+/**
+ * Problems with the pieces of one state on its own: each playing seat has its four pawns with
+ * their own ids, and every pawn is somewhere on its path. Also used to check a loaded save.
+ */
+export function pieceProblems(state: GameState): string[] {
+  const problems: string[] = [];
+  for (const seat of state.seats) {
+    const count = pawnsOf(state, seat.id).length;
+    const want = seat.kind === 'empty' ? 0 : PAWNS_PER_SEAT;
+    if (count !== want) problems.push(`seat ${seat.id} has ${count} pawns, expected ${want}`);
+  }
+  const ids = state.pawns.map((p) => p.id);
+  if (new Set(ids).size !== ids.length) problems.push('duplicate pawn ids');
+  for (const pawn of state.pawns) {
+    const n = Number(pawn.id.slice(1));
+    if (pawn.id[0] !== pawn.seat || !Number.isInteger(n) || n < 0 || n >= PAWNS_PER_SEAT) {
+      problems.push(`${pawn.id} does not belong to seat ${pawn.seat}`);
+    }
+    const i = pawn.pathIndex;
+    if (i !== null && (!Number.isInteger(i) || i < 0 || i > HOME_INDEX)) problems.push(`${pawn.id} at index ${i}`);
+    if (i === null && state.ruleConfig.entryRule === 'onStart') problems.push(`${pawn.id} off the board under onStart`);
+    if (pawn.progress < 0) problems.push(`${pawn.id} has negative progress`);
+  }
+  return problems;
+}
+
 /** Problems found in `next`, given the state and action that produced it; empty when all hold. */
 export function checkInvariants(prev: GameState, action: Action, next: GameState): string[] {
   const problems: string[] = [];
   const fail = (msg: string) => problems.push(`${action.type} by ${action.seat}: ${msg}`);
 
+  pieceProblems(next).forEach(fail);
   for (const seat of next.seats) {
-    const count = pawnsOf(next, seat.id).length;
-    const want = seat.kind === 'empty' ? 0 : PAWNS_PER_SEAT;
-    if (count !== want) fail(`seat ${seat.id} has ${count} pawns, expected ${want}`);
     const before = prev.seats.find((s) => s.id === seat.id)!;
     if (before.hasHit && !seat.hasHit) fail(`seat ${seat.id} lost its hit flag`);
     if (before.finishedRank !== null && seat.finishedRank !== before.finishedRank) {
@@ -24,9 +48,6 @@ export function checkInvariants(prev: GameState, action: Action, next: GameState
 
   for (const pawn of next.pawns) {
     const i = pawn.pathIndex;
-    if (i !== null && (!Number.isInteger(i) || i < 0 || i > HOME_INDEX)) fail(`${pawn.id} at index ${i}`);
-    if (i === null && next.ruleConfig.entryRule === 'onStart') fail(`${pawn.id} off the board under onStart`);
-    if (pawn.progress < 0) fail(`${pawn.id} has negative progress`);
     const hasHit = next.seats.find((s) => s.id === pawn.seat)!.hasHit;
     const needsHit = next.ruleConfig.noHitBehavior !== 'free';
     if (needsHit && !hasHit && i !== null && i > LAST_OUTER_INDEX) fail(`${pawn.id} entered the inner ring without a hit`);

@@ -45,6 +45,19 @@ describe('persistence (R-SAVE-01..04)', () => {
     expect(parseSavedGame(JSON.stringify(badRules))).toMatchObject({ status: 'discarded' });
   });
 
+  it('discards a save whose pawns or seats the board could not draw', () => {
+    const base = game();
+    const offBoard = { ...base, pawns: base.pawns.map((p, i) => (i === 0 ? { ...p, pathIndex: 30 } : p)) };
+    const strangerSeat = { ...base, pawns: base.pawns.map((p, i) => (i === 0 ? { ...p, seat: 'E' } : p)) };
+    const missingPawn = { ...base, pawns: base.pawns.slice(1) };
+    const badSeat = { ...base, seats: base.seats.map((s, i) => (i === 0 ? { ...s, kind: 'ghost' } : s)) };
+    const duplicateId = { ...base, pawns: base.pawns.map((p, i) => (i === 1 ? { ...p, id: base.pawns[0]!.id } : p)) };
+    for (const bad of [offBoard, strangerSeat, missingPawn, badSeat, duplicateId]) {
+      expect(parseSavedGame(JSON.stringify(bad))).toEqual({ status: 'discarded', reason: 'unreadable' });
+    }
+    expect(parseSavedGame(JSON.stringify(base))).toEqual({ status: 'ok', state: base });
+  });
+
   it('treats a failing storage read as unreadable', async () => {
     const store = memoryStore();
     store.getItem = () => Promise.reject(new Error('disk'));

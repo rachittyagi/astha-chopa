@@ -10,12 +10,36 @@ describe('settings store (R-SAVE-03)', () => {
 
   it('persists updates under its own key and restores them', async () => {
     const storage = memoryStore();
-    createSettingsStore(storage).getState().update({ theme: 'wood', sound: false });
+    const store = createSettingsStore(storage);
+    await store.getState().load();
+    store.getState().update({ theme: 'wood', sound: false });
     expect(JSON.parse(storage.data[SETTINGS_KEY]!)).toMatchObject({ theme: 'wood', sound: false });
 
     const again = createSettingsStore(storage);
     await again.getState().load();
     expect(again.getState()).toMatchObject({ theme: 'wood', sound: false, haptics: true });
+  });
+
+  it('a change made before the saved settings finish loading is kept', async () => {
+    const storage = memoryStore({ [SETTINGS_KEY]: JSON.stringify({ theme: 'wood', speed: 'fast' }) });
+    const store = createSettingsStore(storage);
+    const loading = store.getState().load();
+    store.getState().update({ theme: 'chalk' });
+    await loading;
+    expect(store.getState()).toMatchObject({ theme: 'chalk', speed: 'fast', loaded: true });
+    // The early change does not overwrite the other stored settings with defaults.
+    expect(JSON.parse(storage.data[SETTINGS_KEY]!)).toMatchObject({ theme: 'chalk', speed: 'fast' });
+  });
+
+  it('a later load uses the stored values again', async () => {
+    const storage = memoryStore();
+    const store = createSettingsStore(storage);
+    const loading = store.getState().load();
+    store.getState().update({ theme: 'chalk' });
+    await loading;
+    storage.data[SETTINGS_KEY] = JSON.stringify({ theme: 'wood' });
+    await store.getState().load();
+    expect(store.getState().theme).toBe('wood');
   });
 
   it('ignores unknown or corrupt values', async () => {

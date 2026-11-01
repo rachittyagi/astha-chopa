@@ -13,13 +13,15 @@ import { cuesFor, specialThrowSound } from '@/services/feedback';
 import { memoryStore } from '@/services/storage';
 import { createSettingsStore, defaultRules } from '@/store/settings';
 import { durations, motionsFor } from '@/ui/game/motion';
+import { presetSeats } from '@/ui/setup/presets';
 import { HomeScreen } from '@/ui/screens/HomeScreen';
 import { HowToPlayScreen } from '@/ui/screens/HowToPlayScreen';
+import { ResultScreen } from '@/ui/screens/ResultScreen';
 import { SettingsScreen } from '@/ui/screens/SettingsScreen';
 import { gameStore, settingsStore } from '@/ui/testing/appStoreMock';
 
-const mockRouter = { push: jest.fn(), replace: jest.fn(), back: jest.fn() };
-jest.mock('expo-router', () => ({ useRouter: () => mockRouter, Redirect: () => null }));
+const mockRouter = { push: jest.fn(), replace: jest.fn(), back: jest.fn(), canGoBack: jest.fn(() => true) };
+jest.mock('expo-router', () => ({ useRouter: () => mockRouter, useLocalSearchParams: () => ({}), Redirect: () => null }));
 jest.mock('@/store/app', () => require('@/ui/testing/appStoreMock'));
 jest.mock('react-native-safe-area-context', () => require('react-native-safe-area-context/jest/mock').default);
 
@@ -48,7 +50,7 @@ describe('animations from events (TASK-51, R-UI-05)', () => {
 });
 
 describe('sound and haptic cues (TASK-54, R-UX-03)', () => {
-  it('throw, step, hit, a clap for home and a fanfare for the winner', () => {
+  it('throw, step, hit, a whistle for home and a fanfare for the winner', () => {
     const thrown = { id: 1, value: 2 as const, shells: [true, true, false, false] as const, bonus: false };
     const events: GameEvent[] = [
       { type: 'ThrowResolved', seat: 'A', throw: thrown },
@@ -57,7 +59,7 @@ describe('sound and haptic cues (TASK-54, R-UX-03)', () => {
       { type: 'PawnHome', pawnId: 'A1' },
       { type: 'PlayerFinished', seat: 'A', rank: 1 },
     ];
-    expect(cuesFor(events)).toEqual({ sounds: ['throw', 'step', 'hit', 'clap', 'win'], haptics: ['throw', 'hit'] });
+    expect(cuesFor(events)).toEqual({ sounds: ['throw', 'step', 'hit', 'whistle', 'win'], haptics: ['throw', 'hit'] });
   });
 
   it('only the first place gets the fanfare', () => {
@@ -155,6 +157,69 @@ describe('Home starts the game directly', () => {
     expect(gameStore.getState().game).toEqual(saved);
     expect(screen.getByRole('button', { name: 'New game' })).toBeTruthy();
   });
+
+  it('with an unfinished game, lists that game\'s players, and the saved setup by New game when it differs', async () => {
+    const inGame = seatsOf(['human', 'empty', 'bot', 'empty']).map((s, i) => (i === 0 ? { ...s, name: 'Dada' } : s));
+    gameStore.getState().startGame({ seats: inGame, config: CLASSIC });
+    gameStore.setState({ game: null });
+    const first = await render(<HomeScreen />);
+    expect(screen.getByText('Dada')).toBeTruthy();
+    expect(screen.queryByText('New game players')).toBeNull();
+    await first.unmount();
+
+    const next = seatsOf(['human', 'empty', 'human', 'empty']).map((s, i) => (i === 0 ? { ...s, name: 'Nani' } : s));
+    gameStore.getState().saveSetup({ seats: next, config: CLASSIC });
+    await render(<HomeScreen />);
+    expect(screen.getByLabelText('Who is playing')).toHaveTextContent(/Dada/);
+    expect(screen.getByText('New game players')).toBeTruthy();
+    expect(screen.getByLabelText('New game players')).toHaveTextContent(/Nani/);
+  });
+});
+
+describe('Results screen', () => {
+  beforeEach(() => jest.clearAllMocks());
+
+  it('offers Change players, which opens Players & rules to save and play the next game', async () => {
+    gameStore.getState().startGame({ seats: seatsOf(['human', 'empty', 'human', 'empty']), config: CLASSIC });
+    const game = gameStore.getState().game!;
+    gameStore.setState({ game: { ...game, phase: 'finished', rankings: ['A', 'C'] } });
+    await render(<ResultScreen />);
+    expect(screen.queryByRole('button', { name: 'New game' })).toBeNull();
+    await fireEvent.press(screen.getByRole('button', { name: 'Change players' }));
+    expect(mockRouter.replace).toHaveBeenCalledWith({ pathname: '/setup', params: { then: 'play' } });
+  });
+
+  it('gives the winner a card of their own; the others are listed by place', async () => {
+    gameStore.getState().startGame({ seats: seatsOf(['human', 'human', 'human', 'empty']), config: CLASSIC });
+    const game = gameStore.getState().game!;
+    gameStore.setState({ game: { ...game, phase: 'finished', rankings: ['B', 'A', 'C'] } });
+    await render(<ResultScreen />);
+    expect(screen.getByText('Winner')).toBeTruthy();
+    expect(screen.getByLabelText('Place 1: Player 2')).toBeTruthy();
+    expect(screen.getByLabelText('Place 2: Player 1')).toHaveTextContent(/2\./);
+    expect(screen.getByLabelText('Place 3: Player 3')).toBeTruthy();
+  });
+});
+
+describe('Home save notice', () => {
+  it('explains a removed save and can be dismissed with a button', async () => {
+    gameStore.setState({ saveProblem: 'unreadable', saved: null, game: null });
+    await render(<HomeScreen />);
+    expect(screen.getByText(/couldn't be read/)).toBeTruthy();
+    await fireEvent.press(screen.getByRole('button', { name: 'OK' }));
+    expect(gameStore.getState().saveProblem).toBeNull();
+  });
+});
+
+describe('default names follow the language', () => {
+  it('names new seats in Hindi when the app is in Hindi', async () => {
+    await i18next.changeLanguage('hi');
+    try {
+      expect(presetSeats(2).map((s) => s.name)).toEqual(['खिलाड़ी 1', 'खिलाड़ी 2', 'खिलाड़ी 3', 'खिलाड़ी 4']);
+    } finally {
+      await i18next.changeLanguage('en');
+    }
+  });
 });
 
 describe('app name in one place (TASK-59, R-I18N-03)', () => {
@@ -168,6 +233,12 @@ describe('app name in one place (TASK-59, R-I18N-03)', () => {
 describe('Settings screen (TASK-61, TASK-53)', () => {
   beforeEach(() => settingsStore.setState({ theme: 'chalk', sound: true, speed: 'normal', language: 'en' }));
 
+  it('has Back at the top', async () => {
+    await render(<SettingsScreen />);
+    await fireEvent.press(screen.getByRole('button', { name: 'Back' }));
+    expect(mockRouter.back).toHaveBeenCalled();
+  });
+
   it('switches theme, sound and speed immediately', async () => {
     await render(<SettingsScreen />);
     await fireEvent.press(screen.getByText('Wooden board'));
@@ -176,6 +247,19 @@ describe('Settings screen (TASK-61, TASK-53)', () => {
     expect(settingsStore.getState().sound).toBe(false);
     await fireEvent.press(screen.getByText('Fast'));
     expect(settingsStore.getState().speed).toBe('fast');
+  });
+
+  it('Reset saved game asks, then deletes the saved game', async () => {
+    gameStore.getState().startGame({ seats: seatsOf(['human', 'empty', 'bot', 'empty']), config: CLASSIC });
+    gameStore.getState().quit();
+    await render(<SettingsScreen />);
+    await fireEvent.press(screen.getByRole('button', { name: 'Reset saved game' }));
+    expect(screen.getByText('Reset saved game?')).toBeTruthy();
+    expect(gameStore.getState().saved).not.toBeNull();
+    // The sheet's confirm button carries the same name as the one that opened it.
+    await fireEvent.press(screen.getAllByRole('button', { name: 'Reset saved game' }).at(-1)!);
+    expect(gameStore.getState().saved).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Reset saved game' })).toBeNull();
   });
 
   it('offers to reset a saved game only when one exists', async () => {

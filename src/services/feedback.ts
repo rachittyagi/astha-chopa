@@ -1,7 +1,7 @@
 // Sound effects and haptics (R-UX-03). Both can be switched off in Settings.
 import type { GameEvent, ThrowValue } from '@/engine';
 
-export type Sound = 'throw' | 'step' | 'hit' | 'clap' | 'win' | 'chamma' | 'ashta';
+export type Sound = 'throw' | 'step' | 'hit' | 'clap' | 'win' | 'chamma' | 'ashta' | 'whistle';
 export type Haptic = 'throw' | 'hit';
 
 export interface Cues {
@@ -28,7 +28,7 @@ export function cuesFor(events: GameEvent[]): Cues {
         haptics.push('hit');
         break;
       case 'PawnHome':
-        sounds.push('clap');
+        sounds.push('whistle');
         break;
       case 'PlayerFinished':
         if (event.rank === 1) sounds.push('win');
@@ -47,6 +47,7 @@ const SOURCES: Record<Sound, number> = {
   win: require('../../assets/sounds/win.wav'),
   chamma: require('../../assets/sounds/chamma.wav'),
   ashta: require('../../assets/sounds/ashta.wav'),
+  whistle: require('../../assets/sounds/whistle.wav'),
 };
 
 type Player = { seekTo(seconds: number): unknown; play(): void };

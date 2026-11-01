@@ -5,23 +5,10 @@ import Constants from 'expo-constants';
 import { Redirect, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 
-import { CLASSIC, type GameState } from '@/engine';
+import { debugLinksEnabled, nearlyFinished } from '@/debug/links';
+import { CLASSIC } from '@/engine';
 import { gameStore } from '@/store/app';
 import { presetSeats } from '@/ui/setup/presets';
-
-export function debugLinksEnabled(variant: unknown): boolean {
-  return variant !== 'release';
-}
-
-/** Player 1 has three pawns home and the fourth two squares away, with the inner ring open. */
-export function nearlyFinished(state: GameState): GameState {
-  const spots: Record<string, number> = { A0: 24, A1: 24, A2: 24, A3: 22 };
-  return {
-    ...state,
-    seats: state.seats.map((s) => (s.id === 'A' ? { ...s, hasHit: true } : s)),
-    pawns: state.pawns.map((p) => (p.id in spots ? { ...p, pathIndex: spots[p.id]!, progress: spots[p.id]! } : p)),
-  };
-}
 
 export default function DebugNewGame() {
   const { seed, scenario } = useLocalSearchParams<{ seed?: string; scenario?: string }>();

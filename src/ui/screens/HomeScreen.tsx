@@ -1,28 +1,46 @@
 import { useRouter } from 'expo-router';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Alert, Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 
 import { APP_NAME } from '@/config/app';
+import type { SeatConfig } from '@/engine';
 import { gameStore, useGame, useSettings } from '@/store/app';
-import { Button, Screen } from '@/ui/common';
+import { Button, ConfirmSheet, Screen } from '@/ui/common';
 import { SeatMark } from '@/ui/game/Controls';
 import { Cowrie } from '@/ui/game/Cowrie';
 import { firstSetup } from '@/ui/setup/presets';
-import { useThemedStyles, type Theme } from '@/ui/theme';
+import { font, MIN_TOUCH, radius, space, useThemedStyles, type Theme } from '@/ui/theme';
 
 const makeStyles = (c: Theme) => ({
   hero: { flex: 1, alignItems: 'center' as const, justifyContent: 'center' as const, gap: 10 },
   title: { fontSize: 44, fontWeight: '800' as const, color: c.accent, textAlign: 'center' as const },
   subtitle: { fontSize: 18, color: c.muted, textAlign: 'center' as const },
-  notice: { color: c.danger, textAlign: 'center' as const, fontSize: 16 },
+  notice: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    gap: space.sm,
+    padding: space.md,
+    borderRadius: radius.md,
+    borderWidth: 2,
+    borderColor: c.danger,
+    backgroundColor: c.surface,
+  },
+  noticeText: { flex: 1, color: c.danger, fontSize: font.label },
+  dismiss: { minHeight: MIN_TOUCH, minWidth: MIN_TOUCH, justifyContent: 'center' as const, paddingHorizontal: space.sm },
+  dismissText: { color: c.accent, fontSize: font.label, fontWeight: '700' as const },
   shells: { flexDirection: 'row' as const, gap: 14, marginTop: 18 },
   players: { flexDirection: 'row' as const, flexWrap: 'wrap' as const, justifyContent: 'center' as const, gap: 14 },
   player: { flexDirection: 'row' as const, alignItems: 'center' as const, gap: 6 },
   playerName: { fontSize: 18, color: c.text },
+  nextLabel: { fontSize: 14, color: c.muted, textAlign: 'center' as const },
   actions: { gap: 14, paddingBottom: 24, width: '100%' as const, maxWidth: 480, alignSelf: 'center' as const },
   links: { flexDirection: 'row' as const, gap: 12 },
   link: { flex: 1 },
 });
+
+const sameKey = (seats: readonly Pick<SeatConfig, 'kind' | 'name' | 'color'>[]) =>
+  JSON.stringify(seats.map(({ kind, name, color }) => [kind, name, color]));
 
 /** Home: one big button. Play starts straight away with the players and rules used last time. */
 export function HomeScreen() {
@@ -34,16 +52,18 @@ export function HomeScreen() {
   const problem = useGame((s) => s.saveProblem);
   const innerRing = useSettings((s) => s.innerRing);
   const setup = lastSetup ?? firstSetup(innerRing);
+  // With a game to continue, show who is in that game; the setup saved for the next one is
+  // shown by New game when it differs, so a saved change is visible before it is used.
+  const players = saved ? saved.seats : setup.seats;
+  const nextPlayers = saved && sameKey(saved.seats) !== sameKey(setup.seats) ? setup.seats : null;
 
   const play = () => {
     gameStore.getState().startGame(setup);
     router.push('/game');
   };
-  const newGame = () =>
-    Alert.alert(t('setup.replaceTitle'), t('setup.replaceBody'), [
-      { text: t('common.cancel'), style: 'cancel' },
-      { text: t('setup.replace'), style: 'destructive', onPress: play },
-    ]);
+  // New game replaces the unfinished one, so it asks first.
+  const [confirmReplace, setConfirmReplace] = useState(false);
+  const newGame = () => setConfirmReplace(true);
 
   return (
     <Screen>
@@ -61,23 +81,20 @@ export function HomeScreen() {
         </View>
       </View>
       {problem && (
-        <Text style={styles.notice} onPress={() => gameStore.getState().dismissSaveProblem()}>
-          {t(problem === 'oldVersion' ? 'home.saveOldVersion' : 'home.saveUnreadable')}
-        </Text>
+        <View style={styles.notice} accessibilityLiveRegion="polite">
+          <Text style={styles.noticeText}>{t(problem === 'oldVersion' ? 'home.saveOldVersion' : 'home.saveUnreadable')}</Text>
+          <Pressable
+            onPress={() => gameStore.getState().dismissSaveProblem()}
+            accessibilityRole="button"
+            accessibilityLabel={t('home.dismiss')}
+            style={styles.dismiss}
+          >
+            <Text style={styles.dismissText}>{t('home.dismiss')}</Text>
+          </Pressable>
+        </View>
       )}
       <View style={styles.actions}>
-        <View style={styles.players} accessible accessibilityLabel={t('home.whoPlays')}>
-          {setup.seats.map((seat, i) =>
-            seat.kind === 'empty' ? null : (
-              <View key={i} style={styles.player}>
-                <SeatMark seat={(['A', 'B', 'C', 'D'] as const)[i]!} color={seat.color} size={22} />
-                <Text style={styles.playerName}>
-                  {seat.kind === 'bot' ? t('home.computer', { name: seat.name }) : seat.name}
-                </Text>
-              </View>
-            ),
-          )}
-        </View>
+        <PlayerRow seats={players} label={t('home.whoPlays')} styles={styles} />
         {saved ? (
           <>
             <Button
@@ -87,6 +104,12 @@ export function HomeScreen() {
                 if (gameStore.getState().resume()) router.push('/game');
               }}
             />
+            {nextPlayers && (
+              <>
+                <Text style={styles.nextLabel}>{t('home.nextPlayers')}</Text>
+                <PlayerRow seats={nextPlayers} label={t('home.nextPlayers')} styles={styles} />
+              </>
+            )}
             <Button label={t('home.newGame')} variant="secondary" onPress={newGame} />
           </>
         ) : (
@@ -102,6 +125,43 @@ export function HomeScreen() {
           </View>
         </View>
       </View>
+      <ConfirmSheet
+        visible={confirmReplace}
+        title={t('setup.replaceTitle')}
+        body={t('setup.replaceBody')}
+        confirmLabel={t('setup.replace')}
+        onConfirm={() => {
+          setConfirmReplace(false);
+          play();
+        }}
+        onCancel={() => setConfirmReplace(false)}
+      />
     </Screen>
+  );
+}
+
+function PlayerRow({
+  seats,
+  label,
+  styles,
+}: {
+  seats: readonly Pick<SeatConfig, 'kind' | 'name' | 'color'>[];
+  label: string;
+  styles: ReturnType<typeof makeStyles>;
+}) {
+  const { t } = useTranslation();
+  return (
+    <View style={styles.players} accessible accessibilityLabel={label}>
+      {seats.map((seat, i) =>
+        seat.kind === 'empty' ? null : (
+          <View key={i} style={styles.player}>
+            <SeatMark seat={(['A', 'B', 'C', 'D'] as const)[i]!} color={seat.color} size={22} />
+            <Text style={styles.playerName}>
+              {seat.kind === 'bot' ? t('home.computer', { name: seat.name }) : seat.name}
+            </Text>
+          </View>
+        ),
+      )}
+    </View>
   );
 }

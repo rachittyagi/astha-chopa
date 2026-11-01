@@ -155,7 +155,7 @@ function clapBurst(dt: number): number {
   return body + tail;
 }
 
-/** A few people clapping for a pawn that reached home. */
+/** A few people clapping for the winner. */
 function applause(): Float32Array {
   const claps: number[] = [];
   for (let person = 0; person < 6; person++) {
@@ -198,7 +198,7 @@ const SOUNDS: Record<string, Float32Array> = {
       render(1.7, (t) => 0.55 * gong(t) + peal.reduce((sum, hz, i) => sum + 0.32 * bell(t - 0.08 - i * 0.11, hz), 0) + shimmer(t)),
     );
   })(),
-  // A pawn reached home: applause.
+  // The winner's screen: applause.
   clap: applause(),
   // The winner: a bright fanfare ending on a held chord.
   win: (() => {
@@ -209,6 +209,25 @@ const SOUNDS: Record<string, Float32Array> = {
         const chord = t > 0.62 ? [523, 659, 784, 1047].reduce((sum, hz) => sum + tone(t, hz), 0) * 0.12 * decay(t - 0.62, 1.4) : 0;
         return run + chord;
       }),
+    );
+  })(),
+  // A pawn reached home: a slide whistle swooping up ("whee") then a quick hop up ("oop").
+  // Pure tones only, so the noise sequence (and every other file) stays the same.
+  whistle: (() => {
+    let phase = 0;
+    return normalise(
+      render(0.75, (t) => {
+        // Frequency: glide 700 → 1700 Hz over 0.42 s, a tiny dip, then a hop to 2100 Hz.
+        const glide = t < 0.42 ? 700 + 1000 * Math.pow(t / 0.42, 0.8) : t < 0.48 ? 1700 - 300 * ((t - 0.42) / 0.06) : 2100;
+        const vibrato = 1 + 0.012 * Math.sin(2 * Math.PI * 7 * t);
+        phase += (2 * Math.PI * glide * vibrato) / RATE;
+        // A whistle is nearly a sine with a little breathy second harmonic.
+        const voice = Math.sin(phase) + 0.18 * Math.sin(2 * phase);
+        const env =
+          t < 0.03 ? t / 0.03 : t < 0.42 ? 1 : t < 0.48 ? 0.35 : t < 0.52 ? 0.35 + 0.65 * ((t - 0.48) / 0.04) : decay(t - 0.52, 9);
+        return voice * env;
+      }),
+      0.8,
     );
   })(),
 };

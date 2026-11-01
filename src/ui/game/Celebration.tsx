@@ -4,8 +4,11 @@ import { useTranslation } from 'react-i18next';
 import { AccessibilityInfo, Animated, Easing, Modal, Platform, Text, useWindowDimensions, View } from 'react-native';
 
 import type { Seat } from '@/engine';
-import { Button } from '@/ui/common';
+import { playSound } from '@/services/feedback';
+import { settingsStore } from '@/store/app';
+import { Button, useReduceMotion } from '@/ui/common';
 import { SeatMark } from '@/ui/game/Controls';
+import { Trophy } from '@/ui/game/Trophy';
 import { PAWN_COLORS, useThemedStyles, type Theme } from '@/ui/theme';
 
 const PIECES = 40;
@@ -33,7 +36,6 @@ const makeStyles = (c: Theme) => ({
     width: '86%' as const,
     maxWidth: 420,
   },
-  trophy: { fontSize: 72 },
   title: { fontSize: 32, fontWeight: '800' as const, color: c.text, textAlign: 'center' as const },
   subtitle: { fontSize: 20, color: c.muted, textAlign: 'center' as const },
   row: { flexDirection: 'row' as const, alignItems: 'center' as const, gap: 10 },
@@ -45,6 +47,8 @@ export function Celebration({ seat, onDone }: { seat: Seat | null; onDone(): voi
   const { styles } = useThemedStyles(makeStyles);
   const { width, height } = useWindowDimensions();
   const [fall] = useState(() => new Animated.Value(0));
+  // Confetti is decoration: left out when the system asks for less motion.
+  const reduceMotion = useReduceMotion();
   // Random once per celebration: where each piece starts, how it spins and drifts.
   const [pieces] = useState<Piece[]>(() =>
     Array.from({ length: PIECES }, () => ({
@@ -57,10 +61,19 @@ export function Celebration({ seat, onDone }: { seat: Seat | null; onDone(): voi
     })),
   );
 
+  // Once per winner: announced, and applauded as the card appears (the fanfare already played
+  // on the winning move). Kept apart from the confetti, which restarts if the motion setting changes.
+  const winnerName = seat?.name;
+  useEffect(() => {
+    if (winnerName === undefined) return;
+    AccessibilityInfo.announceForAccessibility(t('game.celebrate.title', { name: winnerName }));
+    playSound('clap', settingsStore.getState());
+  }, [winnerName, t]);
+
   useEffect(() => {
     if (!seat) return;
-    AccessibilityInfo.announceForAccessibility(t('game.celebrate.title', { name: seat.name }));
     fall.setValue(0);
+    if (reduceMotion) return;
     const animation = Animated.loop(
       Animated.timing(fall, {
         toValue: 1,
@@ -72,7 +85,7 @@ export function Celebration({ seat, onDone }: { seat: Seat | null; onDone(): voi
     );
     animation.start();
     return () => animation.stop();
-  }, [seat, fall, t]);
+  }, [seat, fall, reduceMotion]);
 
   if (!seat) return null;
   const colors = [PAWN_COLORS[seat.color]!, ...FESTIVE];
@@ -80,35 +93,36 @@ export function Celebration({ seat, onDone }: { seat: Seat | null; onDone(): voi
   return (
     <Modal transparent visible animationType="fade" onRequestClose={onDone}>
       <View style={styles.overlay}>
-        {pieces.map((p, i) => {
-          const start = p.delay;
-          const translateY = fall.interpolate({
-            inputRange: [0, start, 1],
-            outputRange: [-40, -40, height + 40],
-          });
-          const translateX = fall.interpolate({ inputRange: [0, 1], outputRange: [0, p.drift] });
-          const rotate = fall.interpolate({ inputRange: [0, 1], outputRange: ['0deg', `${p.spin}deg`] });
-          return (
-            <Animated.View
-              key={i}
-              pointerEvents="none"
-              style={{
-                position: 'absolute',
-                top: 0,
-                left: p.x * width,
-                width: p.size,
-                height: p.size * 0.5,
-                borderRadius: 2,
-                backgroundColor: i % 3 === 0 ? colors[0] : p.color,
-                transform: [{ translateY }, { translateX }, { rotate }],
-              }}
-            />
-          );
-        })}
+        {!reduceMotion &&
+          pieces.map((p, i) => {
+            const start = p.delay;
+            const translateY = fall.interpolate({
+              inputRange: [0, start, 1],
+              outputRange: [-40, -40, height + 40],
+            });
+            const translateX = fall.interpolate({ inputRange: [0, 1], outputRange: [0, p.drift] });
+            const rotate = fall.interpolate({ inputRange: [0, 1], outputRange: ['0deg', `${p.spin}deg`] });
+            return (
+              <Animated.View
+                key={i}
+                pointerEvents="none"
+                style={{
+                  position: 'absolute',
+                  top: 0,
+                  left: p.x * width,
+                  width: p.size,
+                  height: p.size * 0.5,
+                  borderRadius: 2,
+                  backgroundColor: i % 3 === 0 ? colors[0] : p.color,
+                  transform: [{ translateY }, { translateX }, { rotate }],
+                }}
+              />
+            );
+          })}
         <View style={styles.card} accessibilityViewIsModal>
-          <Text style={styles.trophy} accessibilityElementsHidden importantForAccessibility="no">
-            🏆
-          </Text>
+          <View accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+            <Trophy />
+          </View>
           <View style={styles.row}>
             <SeatMark seat={seat.id} color={seat.color} size={30} />
             <Text style={styles.title} accessibilityRole="header">

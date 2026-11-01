@@ -123,4 +123,16 @@ describe('game store (DES-12)', () => {
     expect(store.getState().game).toBeNull();
     expect(storage.data[GAME_KEY]).toBeDefined();
   });
+
+  it('discarding deletes the save and the game in memory, so neither comes back', async () => {
+    const { store, storage } = makeStore();
+    store.getState().startGame(setup(['human', 'empty', 'human', 'empty']));
+    await store.getState().discardSaved();
+    expect(store.getState().game).toBeNull();
+    expect(store.getState().saved).toBeNull();
+    expect(storage.data[GAME_KEY]).toBeUndefined();
+    const relaunch = makeStore(storage);
+    await relaunch.store.getState().loadSaved();
+    expect(relaunch.store.getState().saved).toBeNull();
+  });
 });

@@ -15,6 +15,7 @@ export interface Theme {
   muted: string;
   accent: string;
   onAccent: string;
+  /** Ring round pawns that can move; at least 3:1 against the board. */
   highlight: string;
   preview: string;
   danger: string;
@@ -65,15 +66,16 @@ export const THEMES: Record<ThemeName, Theme> = {
   wood: {
     background: '#f3e6cf',
     surface: '#fffaf0',
-    board: '#c8955a',
+    // Light maple: red, blue and purple pawns stand out by fill (≥3:1); the dark outline carries the rest.
+    board: '#e8c99a',
     boardLine: '#4a2e14',
     safeMark: '#4a2e14',
     text: '#2b1d10',
     muted: '#5e4634',
     accent: '#7a3e12',
     onAccent: '#ffffff',
-    highlight: '#ffd36b',
-    preview: 'rgba(255, 236, 170, 0.6)',
+    highlight: '#123a7a',
+    preview: 'rgba(18, 58, 122, 0.3)',
     danger: '#a3221b',
     overlay: 'rgba(0, 0, 0, 0.6)',
     onOverlay: '#ffffff',
@@ -83,14 +85,14 @@ export const THEMES: Record<ThemeName, Theme> = {
     background: '#f6f7fb',
     surface: '#ffffff',
     board: '#ffffff',
-    boardLine: '#b9bfcc',
+    boardLine: '#7d8496',
     safeMark: '#7a8194',
     text: '#1c1f26',
     muted: '#525868',
     accent: '#3949ab',
     onAccent: '#ffffff',
-    highlight: '#ffb300',
-    preview: 'rgba(255, 179, 0, 0.25)',
+    highlight: '#00897b',
+    preview: 'rgba(0, 137, 123, 0.22)',
     danger: '#c62828',
     overlay: 'rgba(0, 0, 0, 0.6)',
     onOverlay: '#ffffff',
@@ -119,6 +121,23 @@ export const SEAT_SHAPES = {
 } as const;
 
 export const MIN_TOUCH = 44;
+
+/** Type scale (pt). Screens pick from these instead of one-off sizes. */
+export const font = {
+  caption: 14,
+  label: 16,
+  body: 18,
+  button: 19,
+  heading: 22,
+  title: 30,
+  display: 44,
+} as const;
+
+/** Spacing scale (pt) for padding and gaps. */
+export const space = { xs: 4, sm: 8, md: 12, lg: 16, xl: 24, xxl: 32 } as const;
+
+/** Corner radii (pt): controls, cards, sheets, and fully round. */
+export const radius = { sm: 8, md: 12, lg: 16, xl: 24, round: 999 } as const;
 
 export function useTheme(): Theme {
   return THEMES[useSettings((s) => s.theme)];

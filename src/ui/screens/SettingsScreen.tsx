@@ -1,50 +1,98 @@
-import { useRouter } from 'expo-router';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Alert, Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 
 import { gameStore, settingsStore, useGame, useSettings } from '@/store/app';
 import type { Settings } from '@/store/settings';
-import { Button, Screen, Segmented, Title, Toggle } from '@/ui/common';
-import { useThemedStyles, type Theme } from '@/ui/theme';
+import { Button, ConfirmSheet, Header, Screen, Segmented, Toggle } from '@/ui/common';
+import { font, radius, space, THEMES as PALETTES, useThemedStyles, type Theme } from '@/ui/theme';
 
 const THEMES: Settings['theme'][] = ['festive', 'chalk', 'wood', 'flat'];
+const SWATCH = 44;
 const SPEEDS: Settings['speed'][] = ['normal', 'fast'];
 const LANGUAGES: Settings['language'][] = ['en', 'hi'];
-const INNER_RING: Settings['innerRing'][] = ['open', 'hit'];
 
 const makeStyles = (c: Theme) => ({
-  label: { fontSize: 16, fontWeight: '700' as const, color: c.text, marginTop: 8 },
-  group: { gap: 8 },
-  hint: { fontSize: 13, color: c.muted },
+  label: { fontSize: font.label, fontWeight: '700' as const, color: c.text, marginTop: space.sm },
+  group: { gap: space.sm },
+  themes: { flexDirection: 'row' as const, flexWrap: 'wrap' as const, gap: space.sm },
+  themeCard: {
+    flexBasis: '47%' as const,
+    flexGrow: 1,
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    gap: space.sm,
+    padding: space.sm,
+    borderRadius: radius.md,
+    borderWidth: 1.5,
+    borderColor: c.muted,
+    backgroundColor: c.surface,
+  },
+  themeSelected: { borderColor: c.accent, borderWidth: 3 },
+  themeName: { flex: 1, color: c.text, fontSize: font.label, fontWeight: '600' as const },
 });
+
+/** A tiny board in a theme's colours: its squares, a safe-square cross and a button-coloured pawn. */
+function ThemeSwatch({ name }: { name: Settings['theme'] }) {
+  const p = PALETTES[name];
+  const line = { position: 'absolute' as const, width: SWATCH * 0.7, height: 2, backgroundColor: p.safeMark };
+  return (
+    <View
+      style={{
+        width: SWATCH,
+        height: SWATCH,
+        backgroundColor: p.board,
+        borderWidth: 2,
+        borderColor: p.boardLine,
+        borderRadius: 6,
+        alignItems: 'center',
+        justifyContent: 'center',
+      }}
+    >
+      <View style={[line, { transform: [{ rotate: '45deg' }] }]} />
+      <View style={[line, { transform: [{ rotate: '-45deg' }] }]} />
+      <View style={{ width: 14, height: 14, borderRadius: 7, backgroundColor: p.accent, borderWidth: 1.5, borderColor: p.pawnOutline }} />
+    </View>
+  );
+}
 
 export function SettingsScreen() {
   const { t } = useTranslation();
-  const router = useRouter();
   const { styles } = useThemedStyles(makeStyles);
   const settings = useSettings((s) => s);
   const saved = useGame((s) => s.saved);
   const update = (patch: Partial<Settings>) => settingsStore.getState().update(patch);
 
-  const reset = () =>
-    Alert.alert(t('settings.resetTitle'), t('settings.resetBody'), [
-      { text: t('common.cancel'), style: 'cancel' },
-      { text: t('settings.reset'), style: 'destructive', onPress: () => void gameStore.getState().discardSaved() },
-    ]);
+  const [confirmReset, setConfirmReset] = useState(false);
+  const reset = () => {
+    setConfirmReset(false);
+    void gameStore.getState().discardSaved();
+  };
 
   return (
     <Screen scroll>
-      <Title>{t('settings.title')}</Title>
+      <Header title={t('settings.title')} />
 
       <View style={styles.group}>
         <Text style={styles.label}>{t('settings.theme')}</Text>
-        <Segmented
-          options={THEMES}
-          value={settings.theme}
-          labelOf={(v) => t(`settings.themes.${v}`)}
-          accessibilityLabel={t('settings.theme')}
-          onChange={(theme) => update({ theme })}
-        />
+        <View style={styles.themes} accessibilityRole="radiogroup" accessibilityLabel={t('settings.theme')}>
+          {THEMES.map((theme) => {
+            const selected = theme === settings.theme;
+            return (
+              <Pressable
+                key={theme}
+                onPress={() => update({ theme })}
+                accessibilityRole="radio"
+                accessibilityState={{ selected }}
+                accessibilityLabel={t(`settings.themes.${theme}`)}
+                style={[styles.themeCard, selected && styles.themeSelected]}
+              >
+                <ThemeSwatch name={theme} />
+                <Text style={styles.themeName}>{t(`settings.themes.${theme}`)}</Text>
+              </Pressable>
+            );
+          })}
+        </View>
       </View>
 
       <Toggle label={t('settings.sound')} value={settings.sound} onChange={(sound) => update({ sound })} />
@@ -73,20 +121,15 @@ export function SettingsScreen() {
         />
       </View>
 
-      <View style={styles.group}>
-        <Text style={styles.label}>{t('settings.innerRing')}</Text>
-        <Segmented
-          options={INNER_RING}
-          value={settings.innerRing}
-          labelOf={(v) => t(`settings.innerRings.${v}`)}
-          accessibilityLabel={t('settings.innerRing')}
-          onChange={(innerRing) => update({ innerRing })}
-        />
-        <Text style={styles.hint}>{t('settings.innerRingHint')}</Text>
-      </View>
-
-      {saved && <Button label={t('settings.reset')} variant="secondary" onPress={reset} />}
-      <Button label={t('common.back')} onPress={() => router.back()} />
+      {saved && <Button label={t('settings.reset')} variant="secondary" onPress={() => setConfirmReset(true)} />}
+      <ConfirmSheet
+        visible={confirmReset}
+        title={t('settings.resetTitle')}
+        body={t('settings.resetBody')}
+        confirmLabel={t('settings.reset')}
+        onConfirm={reset}
+        onCancel={() => setConfirmReset(false)}
+      />
     </Screen>
   );
 }

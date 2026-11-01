@@ -7,16 +7,16 @@ import { APP_NAME } from '@/config/app';
 import { CLASSIC, createGame, THROW_ODDS, THROW_VALUES, type RuleConfig, type ThrowValue } from '@/engine';
 import { useGame, useSettings } from '@/store/app';
 import { defaultRules } from '@/store/settings';
-import { Body, Button, Screen, Title } from '@/ui/common';
+import { Body, Button, Header, Screen } from '@/ui/common';
 import { Board } from '@/ui/game/Board';
 import { Cowrie } from '@/ui/game/Cowrie';
 import { SeatMark } from '@/ui/game/Controls';
 import { presetSeats } from '@/ui/setup/presets';
-import { useThemedStyles, type Theme } from '@/ui/theme';
+import { font, space, useThemedStyles, type Theme } from '@/ui/theme';
 
 const makeStyles = (c: Theme) => ({
-  section: { gap: 8, paddingVertical: 4 },
-  heading: { fontSize: 20, fontWeight: '700' as const, color: c.text },
+  section: { gap: space.sm, paddingVertical: space.xs },
+  heading: { fontSize: font.heading, fontWeight: '700' as const, color: c.text },
   note: { color: c.accent, fontWeight: '600' as const },
   throwRow: { flexDirection: 'row' as const, alignItems: 'center' as const, gap: 6 },
   throwText: { color: c.text, fontSize: 15, marginLeft: 8, flexShrink: 1 },
@@ -46,7 +46,7 @@ export function HowToPlayScreen() {
 
   return (
     <Screen scroll>
-      <Title>{t('howToPlay.title')}</Title>
+      <Header title={t('howToPlay.title')} />
       {game && <Text style={styles.note}>{t('howToPlay.yourRules')}</Text>}
 
       <View style={styles.section}>
@@ -138,7 +138,7 @@ export function HowToPlayScreen() {
         <Body>{t('howToPlay.names.body', { app: APP_NAME })}</Body>
       </View>
 
-      <Button label={t('common.back')} onPress={() => router.back()} />
+      <Button label={t('common.back')} onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))} />
     </Screen>
   );
 }

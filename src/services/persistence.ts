@@ -1,5 +1,16 @@
 // One saved game slot plus separate settings (R-SAVE-01..04).
-import { isValidConfig, SCHEMA_VERSION, SEAT_IDS, validateSeats, type GameState, type RuleConfig, type SeatConfig } from '@/engine';
+import {
+  isValidConfig,
+  pieceProblems,
+  SCHEMA_VERSION,
+  SEAT_IDS,
+  validateSeats,
+  type GameState,
+  type Pawn,
+  type RuleConfig,
+  type Seat,
+  type SeatConfig,
+} from '@/engine';
 
 import type { KeyValueStore } from './storage';
 
@@ -18,6 +29,35 @@ export type LoadResult =
   | { status: 'discarded'; reason: 'unreadable' | 'oldVersion' };
 
 const PHASES = ['throwing', 'moving', 'finished'];
+const SEAT_KINDS = ['human', 'bot', 'empty'];
+
+function isSeat(value: unknown, index: number): value is Seat {
+  const s = value as Partial<Seat> | null;
+  return (
+    !!s &&
+    s.id === SEAT_IDS[index] &&
+    SEAT_KINDS.includes(s.kind as string) &&
+    typeof s.name === 'string' &&
+    typeof s.color === 'string'
+  );
+}
+
+function isPawn(value: unknown): value is Pawn {
+  const p = value as Partial<Pawn> | null;
+  return (
+    !!p &&
+    typeof p.id === 'string' &&
+    SEAT_IDS.includes(p.seat as never) &&
+    (p.pathIndex === null || typeof p.pathIndex === 'number') &&
+    typeof p.progress === 'number'
+  );
+}
+
+/** Every seat and pawn is well formed and the pieces pass the engine's own checks (the board draws them all). */
+function hasValidPieces(s: Partial<GameState>): boolean {
+  if (!(s.seats as unknown[]).every(isSeat) || !(s.pawns as unknown[]).every(isPawn)) return false;
+  return pieceProblems(s as GameState).length === 0;
+}
 
 /** A shape check on a parsed save: enough to reject corrupt or foreign data safely. */
 export function isGameState(value: unknown): value is GameState {
@@ -37,7 +77,8 @@ export function isGameState(value: unknown): value is GameState {
     PHASES.includes(s.phase as string) &&
     SEAT_IDS.includes(s.currentSeat as never) &&
     !!s.ruleConfig &&
-    isValidConfig(s.ruleConfig)
+    isValidConfig(s.ruleConfig) &&
+    hasValidPieces(s)
   );
 }
 

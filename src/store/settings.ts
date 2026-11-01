@@ -56,6 +56,12 @@ function pickSettings(value: unknown): Partial<Settings> {
 
 /** `detectLanguage` picks the first-launch language from the device (no saved choice yet). */
 export function createSettingsStore(storage: KeyValueStore, detectLanguage: () => Settings['language'] = () => 'en') {
+  // Settings changed before load() finishes win over the stored ones.
+  const touched = new Set<string>();
+  const persist = (s: Settings) => {
+    const { theme, sound, haptics, speed, language, callouts, innerRing } = s;
+    void storage.setItem(SETTINGS_KEY, JSON.stringify({ theme, sound, haptics, speed, language, callouts, innerRing }));
+  };
   return createStore<SettingsStore>()((set, get) => ({
     ...DEFAULT_SETTINGS,
     loaded: false,
@@ -66,15 +72,20 @@ export function createSettingsStore(storage: KeyValueStore, detectLanguage: () =
       } catch {
         saved = {};
       }
-      set({ language: detectLanguage(), ...saved, loaded: true });
+      const stored = Object.fromEntries(Object.entries(saved).filter(([key]) => !touched.has(key)));
+      const language = touched.has('language') ? get().language : detectLanguage();
+      set({ language, ...stored, loaded: true });
+      // Early changes were held back so they could not overwrite the stored values with defaults.
+      if (touched.size > 0) persist(get());
+      touched.clear();
     },
     update(patch) {
       set(patch);
-      const { theme, sound, haptics, speed, language, callouts, innerRing } = { ...get(), ...patch };
-      void storage.setItem(
-        SETTINGS_KEY,
-        JSON.stringify({ theme, sound, haptics, speed, language, callouts, innerRing }),
-      );
+      if (!get().loaded) {
+        Object.keys(patch).forEach((key) => touched.add(key));
+        return;
+      }
+      persist(get());
     },
   }));
 }

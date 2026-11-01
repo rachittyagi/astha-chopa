@@ -48,6 +48,8 @@ export interface GameStore {
   loadSaved(): Promise<LoadResult>;
   /** Start a game; `seed` is only passed by the debug deep link. */
   startGame(setup: GameSetup, seed?: number): void;
+  /** Remember the players and rules for the next Play, without starting a game. */
+  saveSetup(setup: GameSetup): void;
   resume(): boolean;
   dispatch(action: Action): EngineError | null;
   /** Play the current bot's action, after advancing its stream for the delay already waited. */
@@ -60,7 +62,7 @@ export interface GameStore {
   /** Leave the game screen; the game stays saved. */
   quit(): void;
   dismissSaveProblem(): void;
-  /** Settings → Reset saved game. */
+  /** Settings → Reset saved game, or Pause → Quit without saving: the game is gone for good. */
   discardSaved(): Promise<void>;
 }
 
@@ -108,6 +110,11 @@ export function createGameStore({ storage, now, newSeed }: GameStoreDeps) {
         void saveSetup(storage, setup);
       },
 
+      saveSetup(setup) {
+        set({ lastSetup: setup });
+        void saveSetup(storage, setup);
+      },
+
       resume() {
         const { saved } = get();
         if (!saved) return false;
@@ -152,7 +159,8 @@ export function createGameStore({ storage, now, newSeed }: GameStoreDeps) {
       quit: () => set({ game: null, events: [], selectedThrowId: null, selectedPawnId: null }),
       dismissSaveProblem: () => set({ saveProblem: null }),
       async discardSaved() {
-        set({ saved: null });
+        // The in-memory game goes too, so nothing can save it again or offer it later.
+        set({ saved: null, game: null, events: [], selectedThrowId: null, selectedPawnId: null });
         await clearGame(storage);
       },
     };
