@@ -19,7 +19,10 @@ module.exports = {
       moduleNameMapper: { '^@/(.*)$': '<rootDir>/src/$1' },
     },
   ],
-  collectCoverageFrom: ['src/**/*.{ts,tsx}', '!src/**/__tests__/**', '!src/**/testing/**', '!src/app/**'],
+  // A suite's first screen render loads React Native's components (~2 s cold here, more on CI
+  // runners with no transform cache), which can pass Jest's default 5 s on its own.
+  testTimeout: 15_000,
+  collectCoverageFrom:['src/**/*.{ts,tsx}', '!src/**/__tests__/**', '!src/**/testing/**', '!src/app/**'],
   // 90% line coverage on engine and bot (R-TEST-01).
   coverageThreshold: {
     './src/engine/': { lines: 90 },
