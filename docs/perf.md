@@ -19,7 +19,7 @@ Targets come from PRD section 9. "Node" rows are measured on the development Mac
 
 ## How to measure on the device
 
-1. Build a preview APK: `npx eas-cli@latest build --profile preview --platform android`, install it, and turn on airplane mode.
+1. Build a preview APK: `pnpm dlx eas-cli@latest build --profile preview --platform android`, install it, and turn on airplane mode.
 2. **Cold start:** force-stop the app, then `adb shell am start -W -n com.asthachopa.app/.MainActivity` three times; record the median `TotalTime`.
 3. **Frame rate:** enable *Profile GPU rendering* (bars) in Developer options, play a 4-player game against bots at Normal speed for two minutes, and note any frames over the 16 ms line during pawn moves and shell rolls.
 4. **Save and bot timing:** in a development build, wrap `saveGame` and `chooseAction` with `performance.now()` and log the times for one full game against Hard bots; record the 95th percentile.

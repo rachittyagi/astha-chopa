@@ -1,8 +1,7 @@
-// Three projects: the pure engine and bot run in plain Node; the app runs under jest-expo.
+// Four projects: the pure engine and bot, and the repo scripts, run in plain Node; the app runs under jest-expo.
 const pureProject = (name) => ({
   displayName: name,
-  preset: 'jest-expo',
-  testEnvironment: 'node',
+  preset: 'jest-expo/node',
   roots: [`<rootDir>/src/${name}`],
   moduleNameMapper: { '^@/(.*)$': '<rootDir>/src/$1' },
 });
@@ -11,6 +10,7 @@ module.exports = {
   projects: [
     pureProject('engine'),
     pureProject('bot'),
+    { ...pureProject('scripts'), roots: ['<rootDir>/scripts'] },
     {
       displayName: 'app',
       preset: 'jest-expo',

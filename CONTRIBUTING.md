@@ -10,34 +10,34 @@ Thanks for helping improve Astha Chopa. Bug reports, rule corrections and pull r
 ## Development
 
 ```bash
-npm install
+pnpm install
 ```
 
 Run every check before opening a pull request:
 
 ```bash
-npm run typecheck
+pnpm run typecheck
 ```
 
 ```bash
-npm run lint
+pnpm run lint
 ```
 
 ```bash
-npm test
+pnpm test
 ```
 
 ```bash
-npm run audit:deps
+pnpm run audit:deps
 ```
 
 ## Guidelines
 
-- `src/engine/` stays pure: no React, Expo, timers, clock or `Math.random`. Every rule change needs a unit test, and `npm run sim` should still report zero failures.
+- `src/engine/` stays pure: no React, Expo, timers, clock or `Math.random`. Every rule change needs a unit test, and `pnpm run sim` should still report zero failures.
 - `src/bot/` imports only from `src/engine`.
 - User-facing text goes through i18n (`src/i18n/en.json` and `hi.json`); the linter rejects literal strings in JSX.
 - Keep the app offline: no network libraries, analytics or ads. `audit:deps` enforces this.
-- Add dependencies with `npx expo install <package>` so versions match the Expo SDK.
+- Add dependencies with `pnpm expo install <package>` (add `-- -D` for a dev-only tool) so versions match the Expo SDK. Use pnpm only; `package-lock.json` and `yarn.lock` should not be committed.
 - Keep pull requests focused on one change, with a short description of what changed and how you tested it.
 
 ## Code of conduct

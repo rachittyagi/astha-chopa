@@ -1,7 +1,7 @@
 // Bot-vs-bot simulation (R-TEST-05): every game must finish within 2,000 turns and every
 // action must pass the rule-invariant checker.
 //
-//   npm run sim -- --players 2,3,4 --config classic,random --games 10000
+//   pnpm run sim -- --players 2,3,4 --config classic,random --games 10000
 import {
   applyAction,
   checkInvariants,

@@ -1,0 +1,9 @@
+# Flat node_modules like npm's, the layout create-expo-app sets up for pnpm and the safest
+# for React Native autolinking and native builds.
+nodeLinker: hoisted
+
+# Packages allowed to run install scripts (pnpm blocks them by default).
+onlyBuiltDependencies:
+  - '@parcel/watcher'
+  - esbuild
+  - unrs-resolver
