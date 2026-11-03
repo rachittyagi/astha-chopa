@@ -1,5 +1,5 @@
 // Generates the bundled sound effects (R-UX-03, R-NET-01: everything is bundled, nothing downloaded).
-// Run once after changing a sound:  npx tsx scripts/make-sounds.ts
+// Run once after changing a sound:  pnpm tsx scripts/make-sounds.ts
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 

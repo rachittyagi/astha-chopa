@@ -1,7 +1,7 @@
 // Checks that every rule id in PRD sections 3–4, and every house-rule option value,
 // is named in at least one engine test title (R-TEST-01).
 //
-//   npm run rules:coverage
+//   pnpm run rules:coverage
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 

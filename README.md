@@ -20,30 +20,32 @@ Ashta Chamma (also called Chowka Bara, Daayam or Kanna Kauri) is a traditional I
 
 ## Requirements
 
-- Node.js 22.13+ or 24.3+, and npm.
+- Node.js 22.13+ or 24.3+, and pnpm 10. Run `corepack enable` once and pnpm uses the version pinned in `package.json` (`packageManager`).
 - For running on a device: a [development build](https://docs.expo.dev/develop/development-builds/introduction/) (Xcode for iOS, Android Studio for Android), or a cloud build with EAS.
 - iOS 16.4 or later; Android 7 (API 24) or later.
 
 ## Getting started
 
 ```bash
-npm install
+pnpm install
 ```
+
+If you installed with npm before the switch to pnpm, delete `node_modules` and `package-lock.json` first.
 
 The app uses native modules (MMKV storage), so it runs in a development build rather than Expo Go:
 
 ```bash
-npx expo run:ios
+pnpm expo run:ios
 ```
 
 ```bash
-npx expo run:android
+pnpm expo run:android
 ```
 
 or build in the cloud:
 
 ```bash
-npx eas-cli@latest build --profile development
+pnpm dlx eas-cli@latest build --profile development
 ```
 
 Expo Go also works for a quick look; saves then fall back to AsyncStorage.
@@ -55,40 +57,44 @@ The fastest way to try the app is in a desktop browser. Everything runs on your 
 1. Install dependencies (once):
 
    ```bash
-   npm install
+   pnpm install
    ```
 
 2. Start the web dev server:
 
    ```bash
-   npx expo start --web
+   pnpm expo start --web
    ```
 
    The app opens in your default browser at http://localhost:8081. If it does not open, visit that address yourself. Edits reload automatically. Press `Ctrl+C` to stop.
+
+   `pnpm start` is different: it starts the server for a development build on a device. Press `w` there to open the web version too.
 
 3. Optional: to open it on a phone or tablet on the same Wi-Fi, use your computer's local IP instead of `localhost`, for example `http://192.168.1.20:8081`.
 
 On the web, saves use the browser's local storage, and sound and speech depend on the browser (click once on the page to allow audio).
 
+If the browser shows `Unable to resolve "react-native-web/…"`, run `pnpm install` again, then restart with a clean Metro cache: `pnpm expo start --web --clear`. `react-native-web` is a dev dependency because only the web preview uses it; it never ships in the phone app.
+
 ## Checks
 
 ```bash
-npm run typecheck
+pnpm run typecheck
 ```
 
 ```bash
-npm run lint
+pnpm run lint
 ```
 
 ```bash
-npm test
+pnpm test
 ```
 
 ```bash
-npm run audit:deps
+pnpm run audit:deps
 ```
 
-`audit:deps` fails if any dependency can reach the network. `npm run sim` plays thousands of bot-vs-bot games against the rules engine and checks its invariants. End-to-end flows for [Maestro](https://maestro.mobile.dev) are in `.maestro/` (`npm run e2e`).
+`audit:deps` fails if any dependency can reach the network. `pnpm run sim` plays thousands of bot-vs-bot games against the rules engine and checks its invariants. End-to-end flows for [Maestro](https://maestro.mobile.dev) are in `.maestro/` (`pnpm run e2e`).
 
 ## Project structure
 
