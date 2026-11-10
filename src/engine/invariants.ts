@@ -3,7 +3,7 @@ import { HOME_INDEX, isSafe, LAST_OUTER_INDEX, squareKey } from './board';
 import { legalMoves } from './legal';
 import { activeSeats, pawnsAt, pawnsOf, squareOf } from './occupancy';
 import { PAWNS_PER_SEAT } from './setup';
-import { THROW_VALUES } from './throws';
+import { earnsRethrow, THROW_VALUES } from './throws';
 import type { Action, GameState } from './types';
 
 /**
@@ -26,7 +26,7 @@ export function pieceProblems(state: GameState): string[] {
     }
     const i = pawn.pathIndex;
     if (i !== null && (!Number.isInteger(i) || i < 0 || i > HOME_INDEX)) problems.push(`${pawn.id} at index ${i}`);
-    if (i === null && state.ruleConfig.entryRule === 'onStart') problems.push(`${pawn.id} off the board under onStart`);
+    if (i === null && state.ruleConfig.entryRule === 'onStart' && !state.ruleConfig.hitNeedsEntry) problems.push(`${pawn.id} off the board under onStart`);
     if (pawn.progress < 0) problems.push(`${pawn.id} has negative progress`);
   }
   return problems;
@@ -85,8 +85,8 @@ export function checkInvariants(prev: GameState, action: Action, next: GameState
   } else {
     if (!activeSeats(next).some((s) => s.id === next.currentSeat)) fail('current seat is not playing');
     if (next.phase === 'moving' && legalMoves(next).length === 0) fail('moving phase with no legal move');
-    if (next.phase === 'throwing' && next.pool.length > 0 && !next.pool.every((t) => t.value === 4 || t.value === 8)) {
-      fail('throwing phase with a 1, 2 or 3 in the pool');
+    if (next.phase === 'throwing' && !next.pool.every((t) => earnsRethrow(t.value, next.ruleConfig))) {
+      fail('throwing phase with a throw that ends the throwing in the pool');
     }
   }
 

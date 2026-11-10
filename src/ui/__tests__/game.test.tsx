@@ -271,6 +271,24 @@ describe('Game screen (TASK-46, TASK-48)', () => {
     jest.useRealTimers();
   });
 
+  it('resets the shells once the turn passes, after a throw with no move has been seen', async () => {
+    jest.useFakeTimers();
+    // A 2 with every pawn still waiting: nothing to move, so the turn passes straight away.
+    gameStore.setState({ game: rigged(gameStore.getState().game!, [2]) });
+    await render(<GameScreen />);
+    await fireEvent.press(screen.getByRole('button', { name: 'Throw' }));
+    await act(() => {
+      jest.advanceTimersByTime(durations(false).shellsMs);
+    });
+    expect(gameStore.getState().game!.currentSeat).not.toBe('A');
+    expect(screen.getByLabelText(/^2: /)).toBeTruthy();
+    await act(() => {
+      jest.advanceTimersByTime(1200);
+    });
+    expect(screen.queryByLabelText(/^2: /)).toBeNull();
+    jest.useRealTimers();
+  });
+
   it('Restart from the pause menu drops the previous game\'s throw', async () => {
     jest.useFakeTimers();
     // A 2 with every pawn still waiting: nothing to move, so the shells stay on show.

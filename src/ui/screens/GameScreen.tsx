@@ -1,5 +1,5 @@
 import { Redirect, useRouter } from 'expo-router';
-import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import type { TFunction } from 'i18next';
 import { useTranslation } from 'react-i18next';
 import { AccessibilityInfo, Modal, ScrollView, Text, useWindowDimensions, View } from 'react-native';
@@ -12,6 +12,7 @@ import { gameStore, settingsStore, useGame, useSettings } from '@/store/app';
 import { Button, ConfirmSheet, Title } from '@/ui/common';
 import { Board } from '@/ui/game/Board';
 import { Celebration } from '@/ui/game/Celebration';
+import { botPlan, trailAfter, type TrailMark } from '@/ui/game/follow';
 import { MoveChoice, PoolChips, SeatMark, seatStatus, SeatStatus, Shells, TurnBanner } from '@/ui/game/Controls';
 import { messageFor, throwPhrase } from '@/ui/game/messages';
 import { durations, motionsFor, type Motion } from '@/ui/game/motion';
@@ -25,6 +26,8 @@ const QUEUED_CALLOUT_MS = 1200;
 const MAX_CALLOUTS = 3;
 /** After the shells settle, a bot waits this much longer before moving, so everyone can read the throw. */
 const READ_PAUSE_MS = 900;
+/** A throw that ends the turn at once (no legal move) stays up this long after it settles, then the shells reset. */
+const THROW_HOLD_MS = 1200;
 /** Tablets in landscape get a seat at each side of the board (R-LOCAL-04). */
 const TABLET_MIN_WIDTH = 900;
 /** Height of a tablet seat panel at normal text size; it grows with the system font scale. */
@@ -63,8 +66,10 @@ function useEventFeedback() {
   const [callouts, setCallouts] = useState<{ id: number; text: string }[]>([]);
   const nextCalloutId = useRef(1);
   const [motions, setMotions] = useState<Motion[]>([]);
-  // The latest throw stays visible even when its turn ends at once (no legal move).
+  // The latest throw, shown until the turn passes; a throw that ends the turn at once (no legal
+  // move) is held briefly first. The next player then starts from face-down shells.
   const [lastThrow, setLastThrow] = useState<Throw | null>(null);
+  const resetTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   // The seat that just finished first, celebrated on screen once its winning move has played.
   const [winner, setWinner] = useState<SeatId | null>(null);
   // True while the shells tumble: the result stays hidden until they settle.
@@ -74,11 +79,15 @@ function useEventFeedback() {
   // The reveal waiting for the shells to settle; a new batch runs it at once instead of dropping it.
   const pendingReveal = useRef<(() => void) | null>(null);
   const speechTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Bot moves since the human last moved, numbered on the board so a run of 8, 8, 4, 2 can be followed.
+  const [trail, setTrail] = useState<TrailMark[]>([]);
 
   useEffect(
     () =>
-      gameStore.subscribe(({ events, game }) => {
+      gameStore.subscribe(({ events, game }, prev) => {
         if (!game || events.length === 0) return;
+        const poolBefore = prev.game?.pool ?? [];
+        setTrail((marks) => trailAfter(marks, game, poolBefore));
         const messages = events.map((e) => messageFor(e, game, t));
         const shown = messages.map((m) => m.callout).filter(Boolean);
         const spoken = messages.map((m) => m.announce).filter(Boolean);
@@ -87,6 +96,13 @@ function useEventFeedback() {
         // Let the shells finish rolling before the result is called out or announced.
         const settings = settingsStore.getState();
         const wait = thrown ? durations(settings.speed === 'fast' || !humanStillPlaying(game)).shellsMs : 0;
+        if (thrown && resetTimer.current) clearTimeout(resetTimer.current);
+        if (events.some((e) => e.type === 'TurnPassed')) {
+          if (resetTimer.current) clearTimeout(resetTimer.current);
+          const clear = () => setLastThrow(null);
+          if (thrown) resetTimer.current = setTimeout(clear, wait + THROW_HOLD_MS);
+          else clear();
+        }
         const show = () => {
           setRolling(false);
           // Once the shells settle: Chamma and Ashta get their own sound, then the result is
@@ -137,6 +153,7 @@ function useEventFeedback() {
     () => () => {
       if (calloutTimer.current) clearTimeout(calloutTimer.current);
       if (speechTimer.current) clearTimeout(speechTimer.current);
+      if (resetTimer.current) clearTimeout(resetTimer.current);
     },
     [],
   );
@@ -161,7 +178,7 @@ function useEventFeedback() {
   // Bots and the results screen wait from the moment of the win; the overlay waits for the pawns.
   const celebrating = winner !== null;
   const shownWinner = motions.length === 0 ? winner : null;
-  return { callout, motions, motionDone, lastThrow, rolling, winner: shownWinner, celebrating, clearWinner };
+  return { callout, motions, motionDone, lastThrow, rolling, winner: shownWinner, celebrating, clearWinner, trail };
 }
 
 const makeStyles = (c: Theme) => ({
@@ -356,9 +373,12 @@ function GameView() {
   // Bot-only play runs at Fast automatically (R-UX-04).
   const fast = speedFast || (!!game && !humanStillPlaying(game));
   const timing = durations(fast);
-  const { callout, motions, motionDone, lastThrow, rolling, winner, celebrating, clearWinner } = useEventFeedback();
+  const { callout, motions, motionDone, lastThrow, rolling, winner, celebrating, clearWinner, trail } = useEventFeedback();
   // Bots wait while the winner is being celebrated, and until the shells and pawns are still.
-  useBotDriver(game, paused || celebrating, rolling || motions.length > 0, fast);
+  const busy = rolling || motions.length > 0;
+  useBotDriver(game, paused || celebrating, busy, fast);
+  // While a bot waits to move, its chosen throw and the squares its pawn will cover are shown.
+  const plan = useMemo(() => (game && !busy ? botPlan(game) : null), [game, busy]);
 
   useEffect(() => {
     // Go to the results once the game is over and the celebration has been dismissed.
@@ -373,7 +393,15 @@ function GameView() {
   const canAct = human && !rolling;
   const selection = selectionView(game, selectedThrowId, selectedPawnId);
   // What may be tapped: nothing for bots, or while the shells are still tumbling.
-  const view = canAct ? selection : { ...selection, movablePawnIds: [], playableThrowIds: [], preview: null };
+  const view = canAct
+    ? selection
+    : {
+        ...selection,
+        movablePawnIds: [],
+        playableThrowIds: plan ? [plan.throwId] : [],
+        activeThrowId: plan ? plan.throwId : selection.activeThrowId,
+        preview: plan?.squares ?? null,
+      };
   const tablet = width >= TABLET_MIN_WIDTH && width > height;
 
   const handle = (outcome: TapOutcome) => {
@@ -412,6 +440,7 @@ function GameView() {
         stepMs={timing.stepMs}
         knockbackMs={timing.knockbackMs}
         onMotionDone={motionDone}
+        trail={trail}
       />
       {callout && (
         <View style={styles.callout} pointerEvents="none" accessibilityElementsHidden>

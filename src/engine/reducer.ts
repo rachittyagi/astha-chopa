@@ -2,7 +2,7 @@ import { HOME_INDEX, squareAt } from './board';
 import { reconcileDoubles } from './doubles';
 import { resolveMove } from './legal';
 import { activeSeats, pawnsOf, seatOf } from './occupancy';
-import { drawThrow, isExtraThrow } from './throws';
+import { drawThrow, earnsRethrow, isExtraThrow } from './throws';
 import { endTurn, finishGame, playerFinished, settle } from './turn';
 import type {
   Action,
@@ -41,8 +41,13 @@ function applyThrow(draft: GameState, events: GameEvent[]): void {
   draft.pool.push(thrown);
   events.push({ type: 'ThrowResolved', seat: draft.currentSeat, throw: thrown });
 
-  if (!isExtraThrow(thrown.value)) {
+  if (!earnsRethrow(thrown.value, draft.ruleConfig)) {
     settle(draft, events);
+    return;
+  }
+  // Only 4s and 8s count toward the triple penalty; a 1 (under rethrowOnOne) breaks the run.
+  if (!isExtraThrow(thrown.value)) {
+    draft.consecutiveChammaAshta = 0;
     return;
   }
   draft.consecutiveChammaAshta += 1;
@@ -78,7 +83,8 @@ function applyMove(draft: GameState, move: Move, events: GameEvent[]): void {
   if (move.hits.length > 0) {
     for (const id of move.hits) {
       const victim = draft.pawns.find((p) => p.id === id)!;
-      victim.pathIndex = 0; // Back to its start square, still on the board (R-HIT-01).
+      // Back to its start square, still on the board (R-HIT-01), or off it under hitNeedsEntry.
+      victim.pathIndex = draft.ruleConfig.hitNeedsEntry ? null : 0;
       victim.progress = 0;
       events.push({ type: 'PawnHit', pawnId: id, by: seat.id });
     }

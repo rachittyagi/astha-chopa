@@ -49,7 +49,8 @@ function moveWith(
   options: MoveOptions = {},
 ): Move | null {
   if (action.type === 'Enter') {
-    if (state.ruleConfig.entryRule !== 'needChammaOrAshta' || !isExtraThrow(value)) return null;
+    // Waiting pawns exist under needChammaOrAshta, or after a hit under hitNeedsEntry.
+    if (!isExtraThrow(value)) return null;
     const pawn = waitingPawn(state, seat);
     if (!pawn) return null;
     return { action, value, pawnIds: [pawn.id], from: null, to: 0, path: [startSquare(seat)], hits: [] };

@@ -17,6 +17,20 @@ export interface Settings {
   callouts: boolean;
   /** Default for new games: may pawns enter the inner ring before their first hit? */
   innerRing: 'open' | 'hit';
+  /** House rules for every new game (set here, not per game): a 1 earns another throw. */
+  rethrowOnOne: boolean;
+  /** A hit pawn needs a 4 or 8 to enter again. */
+  hitNeedsEntry: boolean;
+  /** A pawn reaching home earns another throw. */
+  bonusOnHome: boolean;
+}
+
+/** The rules Settings decides for every new game, whatever the setup chose. */
+export const HOUSE_RULE_KEYS = ['rethrowOnOne', 'hitNeedsEntry', 'bonusOnHome'] as const;
+export type HouseRules = Pick<RuleConfig, (typeof HOUSE_RULE_KEYS)[number]>;
+
+export function houseRules(settings: HouseRules): HouseRules {
+  return { rethrowOnOne: settings.rethrowOnOne, hitNeedsEntry: settings.hitNeedsEntry, bonusOnHome: settings.bonusOnHome };
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -27,11 +41,18 @@ export const DEFAULT_SETTINGS: Settings = {
   language: 'en',
   callouts: true,
   innerRing: 'open',
+  rethrowOnOne: false,
+  hitNeedsEntry: false,
+  bonusOnHome: false,
 };
 
-/** The rules a new game starts from: Classic, with the inner-ring default from Settings. */
-export function defaultRules(settings: Pick<Settings, 'innerRing'>): RuleConfig {
-  return { ...CLASSIC, noHitBehavior: settings.innerRing === 'open' ? 'free' : 'block' };
+/** The rules a new game starts from: Classic, with the inner ring and house rules from Settings. */
+export function defaultRules(settings: Pick<Settings, 'innerRing'> & Partial<HouseRules>): RuleConfig {
+  return {
+    ...CLASSIC,
+    noHitBehavior: settings.innerRing === 'open' ? 'free' : 'block',
+    ...houseRules({ ...CLASSIC, ...settings }),
+  };
 }
 
 export interface SettingsStore extends Settings {
@@ -51,6 +72,7 @@ function pickSettings(value: unknown): Partial<Settings> {
   if (v.language === 'en' || v.language === 'hi') out.language = v.language;
   if (typeof v.callouts === 'boolean') out.callouts = v.callouts;
   if (v.innerRing === 'open' || v.innerRing === 'hit') out.innerRing = v.innerRing;
+  for (const key of HOUSE_RULE_KEYS) if (typeof v[key] === 'boolean') out[key] = v[key];
   return out;
 }
 
@@ -60,7 +82,8 @@ export function createSettingsStore(storage: KeyValueStore, detectLanguage: () =
   const touched = new Set<string>();
   const persist = (s: Settings) => {
     const { theme, sound, haptics, speed, language, callouts, innerRing } = s;
-    void storage.setItem(SETTINGS_KEY, JSON.stringify({ theme, sound, haptics, speed, language, callouts, innerRing }));
+    const saved = { theme, sound, haptics, speed, language, callouts, innerRing, ...houseRules(s) };
+    void storage.setItem(SETTINGS_KEY, JSON.stringify(saved));
   };
   return createStore<SettingsStore>()((set, get) => ({
     ...DEFAULT_SETTINGS,

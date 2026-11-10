@@ -1,6 +1,7 @@
 // One saved game slot plus separate settings (R-SAVE-01..04).
 import {
   isValidConfig,
+  withRuleDefaults,
   pieceProblems,
   SCHEMA_VERSION,
   SEAT_IDS,
@@ -77,7 +78,7 @@ export function isGameState(value: unknown): value is GameState {
     PHASES.includes(s.phase as string) &&
     SEAT_IDS.includes(s.currentSeat as never) &&
     !!s.ruleConfig &&
-    isValidConfig(s.ruleConfig) &&
+    isValidConfig(withRuleDefaults(s.ruleConfig)) &&
     hasValidPieces(s)
   );
 }
@@ -95,7 +96,7 @@ export function parseSavedGame(json: string | null): LoadResult {
     return { status: 'discarded', reason: 'oldVersion' };
   }
   if (!isGameState(parsed)) return { status: 'discarded', reason: 'unreadable' };
-  return { status: 'ok', state: parsed };
+  return { status: 'ok', state: { ...parsed, ruleConfig: withRuleDefaults(parsed.ruleConfig) } };
 }
 
 export async function saveGame(store: KeyValueStore, state: GameState): Promise<void> {
@@ -129,8 +130,9 @@ export function parseSetup(json: string | null): GameSetup | null {
       (s): s is SeatConfig =>
         !!s && typeof s.name === 'string' && typeof s.color === 'string' && ['human', 'bot', 'empty'].includes(s.kind),
     );
-    if (validateSeats(seats).length > 0 || !isValidConfig(value.config)) return null;
-    return { seats, config: value.config };
+    const config = withRuleDefaults(value.config);
+    if (validateSeats(seats).length > 0 || !isValidConfig(config)) return null;
+    return { seats, config };
   } catch {
     return null;
   }

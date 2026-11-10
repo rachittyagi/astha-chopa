@@ -2,7 +2,7 @@
 
 export { pathFor, isSafe, ringOf, sameSquare, SAFE_SQUARES, HOME_INDEX, LAST_OUTER_INDEX } from './board';
 export type { Ring } from './board';
-export { CLASSIC, RULE_COMBINATIONS, RULE_KEYS, RULE_OPTIONS, configNumber, isValidConfig } from './config';
+export { CLASSIC, RULE_COMBINATIONS, RULE_KEYS, RULE_OPTIONS, configNumber, isValidConfig, withRuleDefaults } from './config';
 export type { RuleConfig, RuleKey } from './config';
 export { legalMoves, movesWithValue } from './legal';
 export { isOuterSquare } from './doubles';
@@ -11,7 +11,7 @@ export { pawnsAt, squareOf, activeSeats } from './occupancy';
 export { applyAction, endGameNow, humanStillPlaying, LOG_LIMIT } from './reducer';
 export { createGame, validateSeats, PAWNS_PER_SEAT } from './setup';
 export type { SeatProblem } from './setup';
-export { THROW_ODDS, THROW_VALUES } from './throws';
+export { earnsRethrow, THROW_ODDS, THROW_VALUES } from './throws';
 export { nextRandom } from './rng';
 export * from './types';
 

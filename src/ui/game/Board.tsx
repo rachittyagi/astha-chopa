@@ -17,6 +17,7 @@ import { useReduceMotion } from '@/ui/common';
 import { textOn } from '@/ui/contrast';
 import { PAWN_COLORS, SEAT_SHAPES, useThemedStyles, type Theme } from '@/ui/theme';
 
+import type { TrailMark } from './follow';
 import type { Motion } from './motion';
 import type { SelectionView } from './selection';
 
@@ -32,6 +33,8 @@ interface Props {
   stepMs?: number;
   knockbackMs?: number;
   onMotionDone?(id: number): void;
+  /** Bot moves since the human last moved: a numbered badge where each pawn landed, a hollow one where it left. */
+  trail?: TrailMark[];
 }
 
 const ROWS = [0, 1, 2, 3, 4];
@@ -113,6 +116,15 @@ const makeStyles = (c: Theme) => ({
   },
   waiting: { opacity: 0.7, borderStyle: 'dashed' as const, borderColor: c.boardLine },
   label: { fontWeight: '700' as const },
+  badge: {
+    position: 'absolute' as const,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+    borderWidth: 1.5,
+    borderColor: c.pawnOutline,
+  },
+  badgeFrom: { backgroundColor: c.board, borderStyle: 'dashed' as const, borderWidth: 2 },
+  badgeText: { fontWeight: '800' as const },
 });
 
 export function Board({
@@ -125,6 +137,7 @@ export function Board({
   stepMs = 140,
   knockbackMs = 320,
   onMotionDone,
+  trail = [],
 }: Props) {
   const { t } = useTranslation();
   const { styles } = useThemedStyles(makeStyles);
@@ -302,6 +315,58 @@ export function Board({
           </Animated.View>
         );
       })}
+
+      {trailBadges(trail, motions).map((b) => {
+        const color = PAWN_COLORS[state.seats.find((s) => s.id === b.mark.seat)!.color]!;
+        const badge = Math.max(14, cell * 0.24);
+        // Along the bottom edge, which a lone pawn or a double leaves clear: landings from the
+        // bottom-right corner stepping left, departures from the bottom-left stepping right.
+        const step = (b.index % 3) * (badge - 3);
+        const left = b.square[1] * cell + (b.end === 'to' ? cell - badge - 1 - step : 1 + step);
+        const top = b.square[0] * cell + cell - badge - 1;
+        return (
+          <View
+            key={`${b.end}${b.mark.seat}${b.mark.turn}-${b.mark.n}`}
+            pointerEvents="none"
+            accessibilityElementsHidden
+            importantForAccessibility="no-hide-descendants"
+            testID={`trail-${b.end}-${b.mark.seat}${b.mark.n}`}
+            style={[
+              styles.badge,
+              { left, top, width: badge, height: badge, borderRadius: badge / 2 },
+              b.end === 'to' ? { backgroundColor: color } : [styles.badgeFrom, { borderColor: color }],
+            ]}
+          >
+            <Text style={[styles.badgeText, { fontSize: badge * 0.6, color: b.end === 'to' ? textOn(color) : color }]}>
+              {b.mark.n}
+            </Text>
+          </View>
+        );
+      })}
     </View>
   );
+}
+
+/**
+ * One badge per end of each trail move, with its place among the badges in the same corner.
+ * A pawn's latest landing badge waits until it has finished moving, so it never runs ahead of it.
+ */
+function trailBadges(trail: TrailMark[], motions: Motion[]) {
+  const moving = new Set(motions.flatMap((m) => m.pawnIds));
+  const latest = new Map<string, TrailMark>();
+  trail.forEach((mark) => mark.pawnIds.forEach((id) => latest.set(id, mark)));
+  const arriving = (mark: TrailMark) => mark.pawnIds.some((id) => moving.has(id) && latest.get(id) === mark);
+  const seen = new Map<string, number>();
+  const out: { mark: TrailMark; end: 'from' | 'to'; square: Square; index: number }[] = [];
+  for (const mark of trail) {
+    for (const end of ['from', 'to'] as const) {
+      const square = mark[end];
+      if (!square || (end === 'to' && arriving(mark))) continue;
+      const key = `${end}${keyOf(square)}`;
+      const index = seen.get(key) ?? 0;
+      seen.set(key, index + 1);
+      out.push({ mark, end, square, index });
+    }
+  }
+  return out;
 }

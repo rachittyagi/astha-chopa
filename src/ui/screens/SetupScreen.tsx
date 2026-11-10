@@ -15,7 +15,7 @@ import {
 } from '@/engine';
 import { BOT_LEVELS } from '@/bot';
 import { gameStore, settingsStore, useSettings } from '@/store/app';
-import { defaultRules, type Settings } from '@/store/settings';
+import { defaultRules, HOUSE_RULE_KEYS, type Settings } from '@/store/settings';
 import { Button, ChoiceRow, ConfirmSheet, Header, Screen, Segmented } from '@/ui/common';
 import { firstSetup, nextColor, PLAYER_COUNTS, presetSeats, setKind, type PlayerCount } from '@/ui/setup/presets';
 import { font, MIN_TOUCH, PAWN_COLORS, radius, space, useThemedStyles, type Theme } from '@/ui/theme';
@@ -46,9 +46,14 @@ const makeStyles = (colors: Theme) => ({
   hint: { color: colors.muted, fontSize: font.caption },
 });
 
+/** Rules chosen here: the house rules are left to Settings, which applies them to every new game. */
+const SETUP_RULE_KEYS = RULE_KEYS.filter((key) => !(HOUSE_RULE_KEYS as readonly string[]).includes(key));
+const setupRules = (config: RuleConfig) => SETUP_RULE_KEYS.map((key) => config[key]);
+
 /** The Classic rules with this inner-ring choice, or null when the config is not Classic. */
 function classicRing(config: RuleConfig): Settings['innerRing'] | null {
-  const same = (innerRing: Settings['innerRing']) => JSON.stringify(config) === JSON.stringify(defaultRules({ innerRing }));
+  const same = (innerRing: Settings['innerRing']) =>
+    JSON.stringify(setupRules(config)) === JSON.stringify(setupRules(defaultRules({ innerRing })));
   return INNER_RING.find(same) ?? null;
 }
 
@@ -197,7 +202,7 @@ export function SetupScreen() {
         />
       )}
       {mode === 'custom' &&
-        RULE_KEYS.map((key) => (
+        SETUP_RULE_KEYS.map((key) => (
           <ChoiceRow<string | boolean>
             key={key}
             label={t(`rules.${key}.label`)}
@@ -207,6 +212,8 @@ export function SetupScreen() {
             onChange={(v) => setCustom((c) => ({ ...c, [key]: v }))}
           />
         ))}
+
+      <Text style={styles.hint}>{t('setup.houseRulesHint')}</Text>
 
       {problems.map((p) => (
         <Text key={p} style={styles.problem} accessibilityLiveRegion="polite">

@@ -1,3 +1,4 @@
+import type { RuleConfig } from './config';
 import { nextRandom } from './rng';
 import type { Shells, Throw, ThrowValue } from './types';
 
@@ -15,6 +16,11 @@ export const THROW_ODDS: Readonly<Record<ThrowValue, number>> = {
 /** Chamma (4) and Ashta (8) earn another throw (R-THROW-05). */
 export function isExtraThrow(value: ThrowValue): boolean {
   return value === 4 || value === 8;
+}
+
+/** Whether a throw earns another throw: a 4 or 8, and a 1 too under rethrowOnOne. */
+export function earnsRethrow(value: ThrowValue, config: Pick<RuleConfig, 'rethrowOnOne'>): boolean {
+  return isExtraThrow(value) || (value === 1 && config.rethrowOnOne);
 }
 
 /** Mouth-up count, except none up = 8 (Ashta) (R-THROW-02). */

@@ -12,9 +12,11 @@ describe('rule config (R-CFG-01..02)', () => {
       doubleCrossing: 'blockOnce',
       bonusOnHome: false,
       playToEnd: true,
+      rethrowOnOne: false,
+      hitNeedsEntry: false,
     });
-    expect(RULE_KEYS).toHaveLength(7);
-    expect(RULE_COMBINATIONS).toBe(192);
+    expect(RULE_KEYS).toHaveLength(9);
+    expect(RULE_COMBINATIONS).toBe(768);
   });
 
   it('numbers every combination of options exactly once', () => {

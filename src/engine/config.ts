@@ -9,6 +9,10 @@ export interface RuleConfig {
   doubleCrossing: 'free' | 'blockOnce';
   bonusOnHome: boolean;
   playToEnd: boolean;
+  /** A 1 earns another throw, as a 4 or 8 does. */
+  rethrowOnOne: boolean;
+  /** A hit pawn leaves the board and needs a 4 or 8 to enter again, instead of restarting on its start square. */
+  hitNeedsEntry: boolean;
 }
 
 export const CLASSIC: Readonly<RuleConfig> = Object.freeze({
@@ -19,6 +23,8 @@ export const CLASSIC: Readonly<RuleConfig> = Object.freeze({
   doubleCrossing: 'blockOnce',
   bonusOnHome: false,
   playToEnd: true,
+  rethrowOnOne: false,
+  hitNeedsEntry: false,
 });
 
 export type RuleKey = keyof RuleConfig;
@@ -32,6 +38,8 @@ export const RULE_OPTIONS: { readonly [K in RuleKey]: readonly RuleConfig[K][] }
   doubleCrossing: ['free', 'blockOnce'],
   bonusOnHome: [true, false],
   playToEnd: [true, false],
+  rethrowOnOne: [true, false],
+  hitNeedsEntry: [true, false],
 };
 
 export const RULE_KEYS = Object.keys(RULE_OPTIONS) as RuleKey[];
@@ -49,6 +57,11 @@ export function configNumber(n: number): RuleConfig {
     rest = Math.floor(rest / options.length);
   }
   return config as unknown as RuleConfig;
+}
+
+/** Rules added after release default to off, so saves and setups from older versions still load. */
+export function withRuleDefaults(config: RuleConfig): RuleConfig {
+  return { ...config, rethrowOnOne: config.rethrowOnOne ?? false, hitNeedsEntry: config.hitNeedsEntry ?? false };
 }
 
 export function isValidConfig(config: RuleConfig): boolean {

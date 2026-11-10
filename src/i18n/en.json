@@ -67,7 +67,8 @@
       "open": "Open from the start",
       "hit": "Needs a hit first"
     },
-    "defaultName": "Player {{n}}"
+    "defaultName": "Player {{n}}",
+    "houseRulesHint": "Throwing again on a 1, re-entering hit pawns and the home bonus are set in Settings."
   },
   "colors": {
     "red": "Red",
@@ -113,6 +114,16 @@
       "label": "When someone wins",
       "true": "Play on for 2nd and 3rd place",
       "false": "The game ends"
+    },
+    "rethrowOnOne": {
+      "label": "Throwing a 1",
+      "true": "Earns another throw",
+      "false": "Ends the throws"
+    },
+    "hitNeedsEntry": {
+      "label": "A hit pawn",
+      "true": "Needs a 4 or 8 to enter again",
+      "false": "Starts again on its start square"
     }
   },
   "game": {
@@ -216,7 +227,8 @@
       "triple": {
         "true": "Three 4s or 8s in a row lose the whole turn, including the throws already made.",
         "false": "There is no penalty for throwing several 4s or 8s in a row."
-      }
+      },
+      "rethrowOnOne": "In this game a 1 also earns another throw."
     },
     "moving": {
       "title": "Moving",
@@ -233,7 +245,8 @@
     },
     "hits": {
       "title": "Hitting",
-      "body": "Land on a square with one opponent pawn to send it back to its start square. A hit earns a bonus throw and opens the inner ring for all your pawns."
+      "body": "Land on a square with one opponent pawn to send it back to its start square. A hit earns a bonus throw and opens the inner ring for all your pawns.",
+      "hitNeedsEntry": "In this game a hit pawn leaves the board and needs a 4 or 8 to enter again."
     },
     "doubles": {
       "title": "Doubles",
@@ -281,6 +294,11 @@
     "reset": "Reset saved game",
     "resetTitle": "Reset saved game?",
     "resetBody": "The game you haven't finished will be deleted.",
-    "callouts": "Call out throws"
+    "callouts": "Call out throws",
+    "houseRules": "Game rules",
+    "houseRulesHint": "Used for every new game. A game in progress keeps its rules.",
+    "rethrowOnOne": "Throw again on a 1, like a 4 or 8",
+    "hitNeedsEntry": "A hit pawn needs a 4 or 8 to start again",
+    "bonusOnHome": "Throw again when a pawn reaches home"
   }
 }

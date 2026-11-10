@@ -11,6 +11,7 @@ import {
   type EngineError,
   type GameEvent,
   type GameState,
+  type RuleConfig,
 } from '@/engine';
 import {
   clearGame,
@@ -29,6 +30,8 @@ export interface GameStoreDeps {
   storage: KeyValueStore;
   now: () => number;
   newSeed: () => number;
+  /** Rules Settings sets for every new game; they override the setup's. */
+  houseRules?: () => Partial<RuleConfig>;
 }
 
 export interface GameStore {
@@ -66,7 +69,7 @@ export interface GameStore {
   discardSaved(): Promise<void>;
 }
 
-export function createGameStore({ storage, now, newSeed }: GameStoreDeps) {
+export function createGameStore({ storage, now, newSeed, houseRules }: GameStoreDeps) {
   return createStore<GameStore>()((set, get) => {
     const commit = (result: ApplyResult): EngineError | null => {
       if (!result.ok) return result.error;
@@ -103,7 +106,8 @@ export function createGameStore({ storage, now, newSeed }: GameStoreDeps) {
         return result;
       },
 
-      startGame(setup, seed) {
+      startGame(chosen, seed) {
+        const setup = { ...chosen, config: { ...chosen.config, ...houseRules?.() } };
         const game = createGame(setup.seats, setup.config, seed ?? newSeed(), `game-${now()}`, now());
         set({ game, setup, lastSetup: setup, events: [], selectedThrowId: null, selectedPawnId: null, saved: game });
         void saveGame(storage, game);

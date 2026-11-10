@@ -35,8 +35,8 @@ export function HowToPlayScreen() {
   const { width } = useWindowDimensions();
   const { styles } = useThemedStyles(makeStyles);
   const game = useGame((s) => s.game);
-  const innerRing = useSettings((s) => s.innerRing);
-  const rules: RuleConfig = game?.ruleConfig ?? defaultRules({ innerRing });
+  const settings = useSettings((s) => s);
+  const rules: RuleConfig = game?.ruleConfig ?? defaultRules(settings);
   const demo = useMemo(
     () => createGame(presetSeats(4), { ...CLASSIC, entryRule: 'onStart' }, 1, 'demo', 0),
     [],
@@ -92,6 +92,7 @@ export function HowToPlayScreen() {
           </View>
         ))}
         <Body>{t('howToPlay.throws.extra')}</Body>
+        {rules.rethrowOnOne && <Body>{t('howToPlay.throws.rethrowOnOne')}</Body>}
         <Body>{t(`howToPlay.throws.triple.${String(rules.triplePenalty)}`)}</Body>
       </View>
 
@@ -109,6 +110,7 @@ export function HowToPlayScreen() {
           {t('howToPlay.hits.title')}
         </Text>
         <Body>{t('howToPlay.hits.body')}</Body>
+        {rules.hitNeedsEntry && <Body>{t('howToPlay.hits.hitNeedsEntry')}</Body>}
       </View>
 
       <View style={styles.section}>

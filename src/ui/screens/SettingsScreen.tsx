@@ -29,6 +29,7 @@ const makeStyles = (c: Theme) => ({
     backgroundColor: c.surface,
   },
   themeSelected: { borderColor: c.accent, borderWidth: 3 },
+  hint: { color: c.muted, fontSize: font.caption },
   themeName: { flex: 1, color: c.text, fontSize: font.label, fontWeight: '600' as const },
 });
 
@@ -118,6 +119,26 @@ export function SettingsScreen() {
           labelOf={(v) => t(`settings.languages.${v}`)}
           accessibilityLabel={t('settings.language')}
           onChange={(language) => update({ language })}
+        />
+      </View>
+
+      <View style={styles.group}>
+        <Text style={styles.label}>{t('settings.houseRules')}</Text>
+        <Text style={styles.hint}>{t('settings.houseRulesHint')}</Text>
+        <Toggle
+          label={t('settings.rethrowOnOne')}
+          value={settings.rethrowOnOne}
+          onChange={(rethrowOnOne) => update({ rethrowOnOne })}
+        />
+        <Toggle
+          label={t('settings.hitNeedsEntry')}
+          value={settings.hitNeedsEntry}
+          onChange={(hitNeedsEntry) => update({ hitNeedsEntry })}
+        />
+        <Toggle
+          label={t('settings.bonusOnHome')}
+          value={settings.bonusOnHome}
+          onChange={(bonusOnHome) => update({ bonusOnHome })}
         />
       </View>
 
