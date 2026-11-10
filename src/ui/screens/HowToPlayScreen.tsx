@@ -12,18 +12,41 @@ import { Board } from '@/ui/game/Board';
 import { Cowrie } from '@/ui/game/Cowrie';
 import { SeatMark } from '@/ui/game/Controls';
 import { presetSeats } from '@/ui/setup/presets';
-import { font, space, useThemedStyles, type Theme } from '@/ui/theme';
+import { fonts, space, STATE, useThemedStyles, type Theme } from '@/ui/theme';
 
 const makeStyles = (c: Theme) => ({
   section: { gap: space.sm, paddingVertical: space.xs },
-  heading: { fontSize: font.heading, fontWeight: '700' as const, color: c.text },
-  note: { color: c.accent, fontWeight: '600' as const },
-  throwRow: { flexDirection: 'row' as const, alignItems: 'center' as const, gap: 6 },
-  throwText: { color: c.text, fontSize: 15, marginLeft: 8, flexShrink: 1 },
+  heading: { fontSize: 20, lineHeight: 26, fontFamily: fonts.heading, color: c.text },
+  number: { color: c.accent },
+  note: { color: STATE.goldInk, fontFamily: fonts.semibold, fontSize: 14, backgroundColor: STATE.gold, borderRadius: 14, padding: 12, overflow: 'hidden' as const },
+  throwRow: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    gap: 2,
+    minHeight: 44,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 12,
+    backgroundColor: c.surface,
+    borderWidth: 1,
+    borderColor: c.line,
+  },
+  throwValue: { fontFamily: fonts.display, fontSize: 22, lineHeight: 28, color: c.accent, width: 28, marginLeft: 8 },
+  throwText: { color: c.text, fontSize: 13, lineHeight: 18, fontFamily: fonts.semibold, flexShrink: 1 },
   seats: { flexDirection: 'row' as const, gap: 12, flexWrap: 'wrap' as const },
   seat: { flexDirection: 'row' as const, alignItems: 'center' as const, gap: 6 },
-  seatText: { color: c.text },
+  seatText: { color: c.text, fontFamily: fonts.body, fontSize: 14 },
 });
+
+/** A numbered section heading: "3 · Moving". */
+function Heading({ n, children, styles }: { n: number; children: string; styles: ReturnType<typeof makeStyles> }) {
+  return (
+    <Text style={styles.heading} accessibilityRole="header">
+      <Text style={styles.number}>{`${n} · `}</Text>
+      {children}
+    </Text>
+  );
+}
 
 /** Mouth-up shells for a throw value: 8 is none up, 4 is all up. */
 const upCount = (value: ThrowValue) => (value === 8 ? 0 : value);
@@ -41,7 +64,7 @@ export function HowToPlayScreen() {
     () => createGame(presetSeats(4), { ...CLASSIC, entryRule: 'onStart' }, 1, 'demo', 0),
     [],
   );
-  const boardSize = Math.min(width - 32, 320);
+  const boardSize = Math.min(width - 32, 300);
   const noSelection = { playableThrowIds: [], activeThrowId: null, movablePawnIds: [], canEnter: false, preview: null };
 
   return (
@@ -50,9 +73,9 @@ export function HowToPlayScreen() {
       {game && <Text style={styles.note}>{t('howToPlay.yourRules')}</Text>}
 
       <View style={styles.section}>
-        <Text style={styles.heading} accessibilityRole="header">
+        <Heading n={1} styles={styles}>
           {t('howToPlay.board.title')}
-        </Text>
+        </Heading>
         <View style={{ alignItems: 'center' }} accessible accessibilityLabel={t('howToPlay.board.picture')}>
           <Board state={demo} size={boardSize} view={noSelection} onPawnPress={() => undefined} />
         </View>
@@ -68,9 +91,9 @@ export function HowToPlayScreen() {
       </View>
 
       <View style={styles.section}>
-        <Text style={styles.heading} accessibilityRole="header">
+        <Heading n={2} styles={styles}>
           {t('howToPlay.throws.title')}
-        </Text>
+        </Heading>
         <Body>{t('howToPlay.throws.body')}</Body>
         {THROW_VALUES.map((value) => (
           <View
@@ -84,8 +107,9 @@ export function HowToPlayScreen() {
             })}
           >
             {[0, 1, 2, 3].map((i) => (
-              <Cowrie key={i} up={i < upCount(value)} size={30} />
+              <Cowrie key={i} up={i < upCount(value)} size={22} />
             ))}
+            <Text style={styles.throwValue}>{value}</Text>
             <Text style={styles.throwText}>
               {t('howToPlay.throws.row', { value, up: upCount(value), percent: Math.round(THROW_ODDS[value] * 100) })}
             </Text>
@@ -97,26 +121,26 @@ export function HowToPlayScreen() {
       </View>
 
       <View style={styles.section}>
-        <Text style={styles.heading} accessibilityRole="header">
+        <Heading n={3} styles={styles}>
           {t('howToPlay.moving.title')}
-        </Text>
+        </Heading>
         <Body>{t(`howToPlay.moving.entry.${rules.entryRule}`)}</Body>
         <Body>{t('howToPlay.moving.body')}</Body>
         <Body>{t(`howToPlay.moving.noHit.${rules.noHitBehavior}`)}</Body>
       </View>
 
       <View style={styles.section}>
-        <Text style={styles.heading} accessibilityRole="header">
+        <Heading n={4} styles={styles}>
           {t('howToPlay.hits.title')}
-        </Text>
+        </Heading>
         <Body>{t('howToPlay.hits.body')}</Body>
         {rules.hitNeedsEntry && <Body>{t('howToPlay.hits.hitNeedsEntry')}</Body>}
       </View>
 
       <View style={styles.section}>
-        <Text style={styles.heading} accessibilityRole="header">
+        <Heading n={5} styles={styles}>
           {t('howToPlay.doubles.title')}
-        </Text>
+        </Heading>
         <Body>
           {rules.doubles
             ? t(`howToPlay.doubles.on.${rules.doubleCrossing}`)
@@ -125,18 +149,18 @@ export function HowToPlayScreen() {
       </View>
 
       <View style={styles.section}>
-        <Text style={styles.heading} accessibilityRole="header">
+        <Heading n={6} styles={styles}>
           {t('howToPlay.winning.title')}
-        </Text>
+        </Heading>
         <Body>{t('howToPlay.winning.body')}</Body>
         <Body>{t(`howToPlay.winning.playToEnd.${String(rules.playToEnd)}`)}</Body>
         {rules.bonusOnHome && <Body>{t('howToPlay.winning.bonusOnHome')}</Body>}
       </View>
 
       <View style={styles.section}>
-        <Text style={styles.heading} accessibilityRole="header">
+        <Heading n={7} styles={styles}>
           {t('howToPlay.names.title')}
-        </Text>
+        </Heading>
         <Body>{t('howToPlay.names.body', { app: APP_NAME })}</Body>
       </View>
 

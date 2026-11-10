@@ -34,7 +34,7 @@ export function houseRules(settings: HouseRules): HouseRules {
 }
 
 export const DEFAULT_SETTINGS: Settings = {
-  theme: 'festive',
+  theme: 'wood',
   sound: true,
   haptics: true,
   speed: 'normal',

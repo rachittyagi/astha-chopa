@@ -46,10 +46,10 @@ describe('settings store (R-SAVE-03)', () => {
     const storage = memoryStore({ [SETTINGS_KEY]: JSON.stringify({ theme: 'neon', speed: 'fast' }) });
     const store = createSettingsStore(storage);
     await store.getState().load();
-    expect(store.getState()).toMatchObject({ theme: 'festive', speed: 'fast' });
+    expect(store.getState()).toMatchObject({ theme: DEFAULT_SETTINGS.theme, speed: 'fast' });
 
     const broken = createSettingsStore(memoryStore({ [SETTINGS_KEY]: '{' }));
     await broken.getState().load();
-    expect(broken.getState().theme).toBe('festive');
+    expect(broken.getState().theme).toBe(DEFAULT_SETTINGS.theme);
   });
 });

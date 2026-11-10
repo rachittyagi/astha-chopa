@@ -1,51 +1,36 @@
-// A cowrie shell (R-THROW-04): mouth up shows the toothed slit, mouth down the glossy, spotted back.
-import Svg, { Defs, Ellipse, Line, LinearGradient, Path, RadialGradient, Stop, Circle } from 'react-native-svg';
+// A cowrie shell seen from above (R-THROW-04): mouth up shows the dark toothed slit,
+// mouth down the speckled back. `glow` marks the shells that counted once a throw settles.
+import Svg, { Circle, Ellipse, Path } from 'react-native-svg';
 
-const W = 40;
-const H = 60;
-
-/** Teeth along both lips of the slit, top to bottom. */
-const TEETH = Array.from({ length: 10 }, (_, i) => 12 + i * 4);
-/** Spots on the back, as [cx, cy, r]. */
+const TEETH =
+  'M15 19.8V21.2M20 19.1V21.2M25 18.6V21.2M30 18.4V21.2M35 18.6V21.2M40 19.1V21.2M45 19.8V21.2M15 22.8V24.2M20 22.8V24.9M25 22.8V25.4M30 22.8V25.6M35 22.8V25.4M40 22.8V24.9M45 22.8V24.2';
+/** Speckles on the back, as [cx, cy, r]. */
 const SPOTS: [number, number, number][] = [
-  [14, 18, 2.2], [24, 14, 1.8], [28, 24, 2.4], [12, 30, 1.9], [21, 33, 2.6],
-  [29, 38, 1.7], [15, 42, 2.2], [24, 47, 1.9], [19, 22, 1.4], [11, 37, 1.3],
+  [18, 20, 1.6], [24, 25, 1.3], [33, 19, 1.5], [40, 26, 1.2], [44, 18, 1.4], [29, 30, 1.2],
 ];
 
-export function Cowrie({ up, size = 36 }: { up: boolean; size?: number }) {
-  const width = (size * W) / H;
+/** `size` is the shell's width; it is a little under three quarters as tall. */
+export function Cowrie({ up, size = 46, glow = false }: { up: boolean; size?: number; glow?: boolean }) {
   return (
-    <Svg width={width} height={size} viewBox={`0 0 ${W} ${H}`}>
-      <Defs>
-        <LinearGradient id="belly" x1="0" y1="0" x2="1" y2="0">
-          <Stop offset="0" stopColor="#e9dcc1" />
-          <Stop offset="0.5" stopColor="#fbf6ea" />
-          <Stop offset="1" stopColor="#e3d3b4" />
-        </LinearGradient>
-        <RadialGradient id="back" cx="0.4" cy="0.35" r="0.75">
-          <Stop offset="0" stopColor="#f3e2bd" />
-          <Stop offset="0.6" stopColor="#d9b67a" />
-          <Stop offset="1" stopColor="#a87a3e" />
-        </RadialGradient>
-      </Defs>
+    <Svg width={size} height={(size * 44) / 60} viewBox="0 0 60 44">
+      {glow && <Ellipse cx={30} cy={22} rx={29.5} ry={21.5} fill="#FFE9A0" opacity={0.75} />}
       {up ? (
         <>
-          <Ellipse cx={20} cy={30} rx={17} ry={27} fill="url(#belly)" stroke="#b39770" strokeWidth={1.5} />
-          {TEETH.map((y) => (
-            <Line key={`l${y}`} x1={14.5} y1={y} x2={18.5} y2={y + 0.6} stroke="#9c7b52" strokeWidth={1.4} strokeLinecap="round" />
-          ))}
-          {TEETH.map((y) => (
-            <Line key={`r${y}`} x1={21.5} y1={y + 0.6} x2={25.5} y2={y} stroke="#9c7b52" strokeWidth={1.4} strokeLinecap="round" />
-          ))}
-          <Path d="M20 7 C 18.6 18, 21.4 40, 20 53" stroke="#4a2c14" strokeWidth={3} strokeLinecap="round" fill="none" />
+          <Ellipse cx={30} cy={23} rx={27} ry={19} fill="#C9AE86" />
+          <Ellipse cx={30} cy={21.5} rx={27} ry={19} fill="#F3E7CF" />
+          <Ellipse cx={25} cy={15} rx={15} ry={7} fill="#FFFBF2" opacity={0.8} />
+          <Path d="M8 22C20 16 40 16 52 22C40 28 20 28 8 22Z" fill="#4A2A12" />
+          <Path d={TEETH} stroke="#F3E7CF" strokeWidth={1.8} />
         </>
       ) : (
         <>
-          <Ellipse cx={20} cy={30} rx={17} ry={27} fill="url(#back)" stroke="#8f6634" strokeWidth={1.5} />
+          <Ellipse cx={30} cy={23} rx={27} ry={19} fill="#A88458" />
+          <Ellipse cx={30} cy={21.5} rx={27} ry={19} fill="#DCC296" />
+          <Ellipse cx={25} cy={14} rx={16} ry={8} fill="#F2E4C6" opacity={0.85} />
           {SPOTS.map(([cx, cy, r]) => (
-            <Circle key={`${cx}-${cy}`} cx={cx} cy={cy} r={r} fill="#8a5a2b" opacity={0.45} />
+            <Circle key={`${cx}-${cy}`} cx={cx} cy={cy} r={r} fill="#9A7448" />
           ))}
-          <Ellipse cx={15} cy={20} rx={4} ry={9} fill="#ffffff" opacity={0.45} />
+          <Path d="M9 26C22 31 40 31 51 24" stroke="#B69467" strokeWidth={1.6} fill="none" />
         </>
       )}
     </Svg>

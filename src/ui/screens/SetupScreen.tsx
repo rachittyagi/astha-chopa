@@ -1,7 +1,8 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Pressable, Text, TextInput, View } from 'react-native';
+import { Pressable, ScrollView, Text, TextInput, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 import {
   RULE_KEYS,
@@ -16,34 +17,60 @@ import {
 import { BOT_LEVELS } from '@/bot';
 import { gameStore, settingsStore, useSettings } from '@/store/app';
 import { defaultRules, HOUSE_RULE_KEYS, type Settings } from '@/store/settings';
-import { Button, ChoiceRow, ConfirmSheet, Header, Screen, Segmented } from '@/ui/common';
+import { Button, Card, ChoiceRow, ConfirmSheet, Header, Overline, Segmented } from '@/ui/common';
+import { SeatMark } from '@/ui/game/Controls';
 import { firstSetup, nextColor, PLAYER_COUNTS, presetSeats, setKind, type PlayerCount } from '@/ui/setup/presets';
-import { font, MIN_TOUCH, PAWN_COLORS, radius, space, useThemedStyles, type Theme } from '@/ui/theme';
+import { fonts, MIN_TOUCH, PAWN_COLORS, radius, space, useThemedStyles, type Theme } from '@/ui/theme';
 
 const KINDS: SeatKind[] = ['human', 'bot', 'empty'];
 const INNER_RING: Settings['innerRing'][] = ['open', 'hit'];
 
 const makeStyles = (colors: Theme) => ({
-  label: { fontSize: font.label, fontWeight: '700' as const, color: colors.text, marginTop: space.xs },
-  seat: { backgroundColor: colors.surface, borderRadius: radius.md, padding: space.md, gap: space.sm },
-  seatHeader: { flexDirection: 'row' as const, justifyContent: 'space-between' as const, alignItems: 'center' as const },
-  side: { fontWeight: '700' as const, color: colors.text, fontSize: 17 },
-  colour: { flexDirection: 'row' as const, alignItems: 'center' as const, gap: 8, minHeight: MIN_TOUCH },
-  colourText: { color: colors.muted, fontSize: 15 },
-  swatch: { width: 36, height: 36, borderRadius: 18, borderWidth: 2, borderColor: colors.text },
-  fieldLabel: { color: colors.muted, fontSize: font.caption, fontWeight: '600' as const },
+  screen: { flex: 1, backgroundColor: colors.background },
+  content: { padding: space.lg, gap: 14, width: '100%' as const, maxWidth: 640, alignSelf: 'center' as const },
+  seat: {
+    backgroundColor: colors.surface,
+    borderRadius: 18,
+    padding: space.md,
+    gap: 10,
+    borderWidth: 1,
+    borderColor: colors.line,
+    borderLeftWidth: 5,
+  },
+  seatHeader: { flexDirection: 'row' as const, justifyContent: 'space-between' as const, alignItems: 'center' as const, gap: 10 },
+  seatTitle: { flexDirection: 'row' as const, alignItems: 'center' as const, gap: 10, flexShrink: 1 },
+  side: { fontFamily: fonts.bold, color: colors.text, fontSize: 15 },
+  colour: { flexDirection: 'row' as const, alignItems: 'center' as const, gap: 8, minHeight: MIN_TOUCH, paddingLeft: 6 },
+  colourText: { color: colors.muted, fontSize: 14, fontFamily: fonts.body },
+  swatch: { width: 32, height: 32, borderRadius: 16, borderWidth: 2, borderColor: colors.surface, boxShadow: `0 0 0 1.5px ${colors.lineStrong}` },
+  fieldLabel: { color: colors.muted, fontSize: 12, fontFamily: fonts.semibold },
   input: {
     minHeight: MIN_TOUCH,
-    borderWidth: 1,
-    borderColor: colors.muted,
-    borderRadius: 8,
-    paddingHorizontal: 10,
+    borderWidth: 1.5,
+    borderColor: '#D9C19A',
+    borderRadius: radius.md,
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 12,
     color: colors.text,
-    fontSize: 16,
+    fontSize: 15,
+    fontFamily: fonts.body,
   },
   field: { gap: 4 },
-  problem: { color: colors.danger, fontWeight: '600' as const },
-  hint: { color: colors.muted, fontSize: font.caption },
+  problem: { color: colors.danger, fontFamily: fonts.semibold, fontSize: 15 },
+  hint: { color: colors.muted, fontSize: 13, lineHeight: 18, fontFamily: fonts.body },
+  bar: {
+    flexDirection: 'row' as const,
+    gap: space.sm,
+    paddingHorizontal: space.lg,
+    paddingTop: space.md,
+    paddingBottom: space.lg,
+    backgroundColor: 'rgba(251,244,230,0.97)',
+    borderTopWidth: 1,
+    borderTopColor: colors.line,
+    boxShadow: '0 -10px 20px rgba(122,62,18,0.08)',
+  },
+  barInner: { flexDirection: 'row' as const, gap: space.sm, width: '100%' as const, maxWidth: 640, alignSelf: 'center' as const },
+  grow: { flex: 1 },
 });
 
 /** Rules chosen here: the house rules are left to Settings, which applies them to every new game. */
@@ -111,10 +138,11 @@ export function SetupScreen() {
   };
 
   return (
-    <Screen scroll>
+    <SafeAreaView style={styles.screen} edges={['top', 'left', 'right']}>
+      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled" automaticallyAdjustKeyboardInsets>
       <Header title={t('setup.title')} onBack={leave} />
 
-      <Text style={styles.label}>{t('setup.players')}</Text>
+      <Overline>{t('setup.quickChoice')}</Overline>
       <Segmented
         options={PLAYER_COUNTS.map(String)}
         value={String(count)}
@@ -127,13 +155,20 @@ export function SetupScreen() {
         }}
       />
 
+      <Overline>{t('setup.seats')}</Overline>
       {seats.map((seat, i) => {
         const side = t(`setup.seat.${SEAT_IDS[i]}`);
         const colour = t(`colors.${seat.color}`);
         return (
-          <View key={SEAT_IDS[i]} style={styles.seat}>
+          <View
+            key={SEAT_IDS[i]}
+            style={[styles.seat, { borderLeftColor: seat.kind === 'empty' ? theme.lineStrong : PAWN_COLORS[seat.color] }]}
+          >
             <View style={styles.seatHeader}>
-              <Text style={styles.side}>{t('setup.seatTitle', { side })}</Text>
+              <View style={styles.seatTitle}>
+                {seat.kind !== 'empty' && <SeatMark seat={SEAT_IDS[i]!} color={seat.color} size={32} />}
+                <Text style={styles.side}>{t('setup.seatTitle', { side })}</Text>
+              </View>
               {seat.kind !== 'empty' && (
                 <Pressable
                   onPress={() => update(i, { color: nextColor(seats, i) })}
@@ -184,7 +219,8 @@ export function SetupScreen() {
         );
       })}
 
-      <Text style={styles.label}>{t('setup.rules')}</Text>
+      <Overline>{t('setup.rules')}</Overline>
+      <Card>
       <Segmented<'classic' | 'custom'>
         options={['classic', 'custom']}
         value={mode}
@@ -212,6 +248,7 @@ export function SetupScreen() {
             onChange={(v) => setCustom((c) => ({ ...c, [key]: v }))}
           />
         ))}
+      </Card>
 
       <Text style={styles.hint}>{t('setup.houseRulesHint')}</Text>
 
@@ -221,9 +258,17 @@ export function SetupScreen() {
         </Text>
       ))}
       {!playNext && <Text style={styles.hint}>{t('setup.saveHint')}</Text>}
-      <Button label={t('setup.saveAndPlay')} onPress={saveAndPlay} disabled={problems.length > 0} />
-      {!playNext && <Button label={t('setup.save')} onPress={save} variant="secondary" disabled={problems.length > 0} />}
-      <Button label={t('common.cancel')} onPress={leave} variant="secondary" />
+      </ScrollView>
+      {/* Sticky actions: always in reach, however long the seats and rules get. */}
+      <SafeAreaView edges={['bottom']} style={styles.bar}>
+        <View style={styles.barInner}>
+          <Button label={t('common.cancel')} onPress={leave} variant="ghost" dense />
+          {!playNext && <Button label={t('setup.save')} onPress={save} variant="secondary" disabled={problems.length > 0} dense />}
+          <View style={styles.grow}>
+            <Button label={t('setup.saveAndPlay')} onPress={saveAndPlay} disabled={problems.length > 0} dense />
+          </View>
+        </View>
+      </SafeAreaView>
       <ConfirmSheet
         visible={confirmReplace}
         title={t('setup.replaceTitle')}
@@ -235,6 +280,6 @@ export function SetupScreen() {
         }}
         onCancel={() => setConfirmReplace(false)}
       />
-    </Screen>
+    </SafeAreaView>
   );
 }

@@ -4,55 +4,55 @@ import { Pressable, Text, View } from 'react-native';
 
 import { gameStore, settingsStore, useGame, useSettings } from '@/store/app';
 import type { Settings } from '@/store/settings';
-import { Button, ConfirmSheet, Header, Screen, Segmented, Toggle } from '@/ui/common';
-import { font, radius, space, THEMES as PALETTES, useThemedStyles, type Theme } from '@/ui/theme';
+import { Button, Card, ConfirmSheet, Header, Overline, Screen, Segmented, Toggle } from '@/ui/common';
+import { Icon } from '@/ui/icons';
+import { fonts, space, THEMES as PALETTES, useThemedStyles, type Theme } from '@/ui/theme';
 
-const THEMES: Settings['theme'][] = ['festive', 'chalk', 'wood', 'flat'];
-const SWATCH = 44;
+const THEMES: Settings['theme'][] = ['wood', 'festive', 'chalk', 'flat'];
+const SWATCH = 84;
 const SPEEDS: Settings['speed'][] = ['normal', 'fast'];
 const LANGUAGES: Settings['language'][] = ['en', 'hi'];
 
 const makeStyles = (c: Theme) => ({
-  label: { fontSize: font.label, fontWeight: '700' as const, color: c.text, marginTop: space.sm },
-  group: { gap: space.sm },
-  themes: { flexDirection: 'row' as const, flexWrap: 'wrap' as const, gap: space.sm },
+  themes: { flexDirection: 'row' as const, flexWrap: 'wrap' as const, gap: 10 },
   themeCard: {
-    flexBasis: '47%' as const,
+    flexBasis: '45%' as const,
     flexGrow: 1,
-    flexDirection: 'row' as const,
-    alignItems: 'center' as const,
-    gap: space.sm,
     padding: space.sm,
-    borderRadius: radius.md,
-    borderWidth: 1.5,
-    borderColor: c.muted,
+    gap: 6,
+    borderRadius: 18,
     backgroundColor: c.surface,
+    boxShadow: '0 0 0 1.5px #D9C19A',
   },
-  themeSelected: { borderColor: c.accent, borderWidth: 3 },
-  hint: { color: c.muted, fontSize: font.caption },
-  themeName: { flex: 1, color: c.text, fontSize: font.label, fontWeight: '600' as const },
+  themeSelected: { backgroundColor: c.accent, boxShadow: `0 0 0 3px ${c.accent}` },
+  themeName: { color: c.text, fontSize: 14, fontFamily: fonts.bold, paddingHorizontal: 2 },
+  themeNameSelected: { color: c.onAccent },
+  check: {
+    position: 'absolute' as const,
+    right: 14,
+    top: 14,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: '#FFF6E6',
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+    boxShadow: '0 2px 4px rgba(0,0,0,0.25)',
+  },
+  rows: { paddingVertical: 4, gap: 0 },
+  divider: { height: 1, backgroundColor: '#EFE2C9' },
+  hint: { color: c.muted, fontSize: 13, lineHeight: 18, fontFamily: fonts.body },
 });
 
-/** A tiny board in a theme's colours: its squares, a safe-square cross and a button-coloured pawn. */
+/** A board in miniature, in a theme's colours: frame, squares and a safe-square cross. */
 function ThemeSwatch({ name }: { name: Settings['theme'] }) {
   const p = PALETTES[name];
-  const line = { position: 'absolute' as const, width: SWATCH * 0.7, height: 2, backgroundColor: p.safeMark };
   return (
-    <View
-      style={{
-        width: SWATCH,
-        height: SWATCH,
-        backgroundColor: p.board,
-        borderWidth: 2,
-        borderColor: p.boardLine,
-        borderRadius: 6,
-        alignItems: 'center',
-        justifyContent: 'center',
-      }}
-    >
-      <View style={[line, { transform: [{ rotate: '45deg' }] }]} />
-      <View style={[line, { transform: [{ rotate: '-45deg' }] }]} />
-      <View style={{ width: 14, height: 14, borderRadius: 7, backgroundColor: p.accent, borderWidth: 1.5, borderColor: p.pawnOutline }} />
+    <View style={{ height: SWATCH, borderRadius: 12, backgroundColor: p.boardFrame, padding: 9 }}>
+      <View style={{ flex: 1, borderRadius: 4, backgroundColor: p.board, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
+        <View style={{ position: 'absolute', width: 40, height: 3, borderRadius: 2, backgroundColor: p.safeMark, transform: [{ rotate: '45deg' }] }} />
+        <View style={{ position: 'absolute', width: 40, height: 3, borderRadius: 2, backgroundColor: p.safeMark, transform: [{ rotate: '-45deg' }] }} />
+      </View>
     </View>
   );
 }
@@ -74,75 +74,83 @@ export function SettingsScreen() {
     <Screen scroll>
       <Header title={t('settings.title')} />
 
-      <View style={styles.group}>
-        <Text style={styles.label}>{t('settings.theme')}</Text>
-        <View style={styles.themes} accessibilityRole="radiogroup" accessibilityLabel={t('settings.theme')}>
-          {THEMES.map((theme) => {
-            const selected = theme === settings.theme;
-            return (
-              <Pressable
-                key={theme}
-                onPress={() => update({ theme })}
-                accessibilityRole="radio"
-                accessibilityState={{ selected }}
-                accessibilityLabel={t(`settings.themes.${theme}`)}
-                style={[styles.themeCard, selected && styles.themeSelected]}
-              >
-                <ThemeSwatch name={theme} />
-                <Text style={styles.themeName}>{t(`settings.themes.${theme}`)}</Text>
-              </Pressable>
-            );
-          })}
-        </View>
+      <Overline>{t('settings.boardTheme')}</Overline>
+      <View style={styles.themes} accessibilityRole="radiogroup" accessibilityLabel={t('settings.theme')}>
+        {THEMES.map((theme) => {
+          const selected = theme === settings.theme;
+          return (
+            <Pressable
+              key={theme}
+              onPress={() => update({ theme })}
+              accessibilityRole="radio"
+              accessibilityState={{ selected }}
+              accessibilityLabel={t(`settings.themes.${theme}`)}
+              style={[styles.themeCard, selected && styles.themeSelected]}
+            >
+              <ThemeSwatch name={theme} />
+              <Text style={[styles.themeName, selected && styles.themeNameSelected]}>{t(`settings.themes.${theme}`)}</Text>
+              {selected && (
+                <View style={styles.check}>
+                  <Icon name="check" size={16} strokeWidth={3} />
+                </View>
+              )}
+            </Pressable>
+          );
+        })}
       </View>
 
-      <Toggle label={t('settings.sound')} value={settings.sound} onChange={(sound) => update({ sound })} />
-      <Toggle label={t('settings.haptics')} value={settings.haptics} onChange={(haptics) => update({ haptics })} />
-      <Toggle label={t('settings.callouts')} value={settings.callouts} onChange={(callouts) => update({ callouts })} />
+      <Overline>{t('settings.soundAndPlay')}</Overline>
+      <Card style={styles.rows}>
+        <Toggle label={t('settings.sound')} sub={t('settings.soundSub')} value={settings.sound} onChange={(sound) => update({ sound })} />
+        <View style={styles.divider} />
+        <Toggle label={t('settings.haptics')} sub={t('settings.hapticsSub')} value={settings.haptics} onChange={(haptics) => update({ haptics })} />
+        <View style={styles.divider} />
+        <Toggle label={t('settings.callouts')} sub={t('settings.calloutsSub')} value={settings.callouts} onChange={(callouts) => update({ callouts })} />
+      </Card>
 
-      <View style={styles.group}>
-        <Text style={styles.label}>{t('settings.speed')}</Text>
-        <Segmented
-          options={SPEEDS}
-          value={settings.speed}
-          labelOf={(v) => t(`settings.speeds.${v}`)}
-          accessibilityLabel={t('settings.speed')}
-          onChange={(speed) => update({ speed })}
-        />
-      </View>
+      <Overline>{t('settings.speed')}</Overline>
+      <Segmented
+        options={SPEEDS}
+        value={settings.speed}
+        labelOf={(v) => t(`settings.speeds.${v}`)}
+        accessibilityLabel={t('settings.speed')}
+        onChange={(speed) => update({ speed })}
+      />
 
-      <View style={styles.group}>
-        <Text style={styles.label}>{t('settings.language')}</Text>
-        <Segmented
-          options={LANGUAGES}
-          value={settings.language}
-          labelOf={(v) => t(`settings.languages.${v}`)}
-          accessibilityLabel={t('settings.language')}
-          onChange={(language) => update({ language })}
-        />
-      </View>
+      <Overline>{t('settings.language')}</Overline>
+      <Segmented
+        options={LANGUAGES}
+        value={settings.language}
+        labelOf={(v) => t(`settings.languages.${v}`)}
+        accessibilityLabel={t('settings.language')}
+        onChange={(language) => update({ language })}
+      />
 
-      <View style={styles.group}>
-        <Text style={styles.label}>{t('settings.houseRules')}</Text>
-        <Text style={styles.hint}>{t('settings.houseRulesHint')}</Text>
+      <Overline>{t('settings.houseRules')}</Overline>
+      <Card style={styles.rows}>
+        <Text style={[styles.hint, { paddingTop: 8 }]}>{t('settings.houseRulesHint')}</Text>
         <Toggle
           label={t('settings.rethrowOnOne')}
           value={settings.rethrowOnOne}
           onChange={(rethrowOnOne) => update({ rethrowOnOne })}
         />
+        <View style={styles.divider} />
         <Toggle
           label={t('settings.hitNeedsEntry')}
           value={settings.hitNeedsEntry}
           onChange={(hitNeedsEntry) => update({ hitNeedsEntry })}
         />
+        <View style={styles.divider} />
         <Toggle
           label={t('settings.bonusOnHome')}
           value={settings.bonusOnHome}
           onChange={(bonusOnHome) => update({ bonusOnHome })}
         />
-      </View>
+      </Card>
 
-      {saved && <Button label={t('settings.reset')} variant="secondary" onPress={() => setConfirmReset(true)} />}
+      <Text style={styles.hint}>{t('settings.motionNote')}</Text>
+
+      {saved && <Button label={t('settings.reset')} variant="danger" onPress={() => setConfirmReset(true)} />}
       <ConfirmSheet
         visible={confirmReset}
         title={t('settings.resetTitle')}

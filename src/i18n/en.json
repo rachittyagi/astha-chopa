@@ -17,7 +17,11 @@
     "computer": "{{name}} (computer)",
     "whoPlays": "Who is playing",
     "nextPlayers": "New game players",
-    "dismiss": "OK"
+    "dismiss": "OK",
+    "savedGame": "Saved game",
+    "welcome": "Welcome back.",
+    "savedTurn": "{{name}} to play · {{home}}/4 home",
+    "replaceNote": "Starting a new game asks before replacing the saved one."
   },
   "setup": {
     "title": "Players & rules",
@@ -68,7 +72,9 @@
       "hit": "Needs a hit first"
     },
     "defaultName": "Player {{n}}",
-    "houseRulesHint": "Throwing again on a 1, re-entering hit pawns and the home bonus are set in Settings."
+    "houseRulesHint": "Throwing again on a 1, re-entering hit pawns and the home bonus are set in Settings.",
+    "quickChoice": "Quick choice",
+    "seats": "Seats"
   },
   "colors": {
     "red": "Red",
@@ -185,7 +191,33 @@
     "botThinking": "Computer is thinking…",
     "poolShort": "Use:",
     "doubleTitle": "Move the double?",
-    "doubleBody": "Two of your pawns share this square. Move one of them, or both together."
+    "doubleBody": "Two of your pawns share this square. Move one of them, or both together.",
+    "tray": {
+      "chamma": "CHAMMA",
+      "ashta": "ASHTA",
+      "pick": "Pick a pawn",
+      "throwing": "Throwing…",
+      "idleSub": "Tap Throw, or tap the shells",
+      "bigSub": "Big throw, you go again"
+    },
+    "banked": "Banked",
+    "bankedEmpty": "Big throws (4, 8) and hits land here",
+    "hint": {
+      "throw": "Throw the shells to start your turn",
+      "banked": "Throw again, then use your banked throws",
+      "safe": "Lands on a safe square · tap again to move",
+      "hit": "Hits {{name}} · tap again to move",
+      "move": "Tap the pawn again to move"
+    },
+    "race": {
+      "start": "Start",
+      "home": "Home"
+    },
+    "mute": "Mute sound",
+    "unmute": "Turn sound on",
+    "homeWord": "home",
+    "seatBot": "Computer · {{level}} · {{side}} seat",
+    "seatHuman": "Human · {{side}} seat"
   },
   "pause": {
     "title": "Paused",
@@ -200,7 +232,8 @@
     "discard": "Quit without saving",
     "discardTitle": "Quit without saving?",
     "discardBody": "This game will be deleted. You won’t be able to come back to it.",
-    "discardConfirm": "Delete and quit"
+    "discardConfirm": "Delete and quit",
+    "saved": "Your game is saved as you play"
   },
   "result": {
     "title": "Results",
@@ -209,7 +242,8 @@
     "changePlayers": "Change players",
     "home": "Home",
     "a11y": "Place {{rank}}: {{name}}",
-    "winner": "Winner"
+    "winner": "Winner",
+    "subtitle": "All four pawns home"
   },
   "howToPlay": {
     "title": "How to play",
@@ -299,6 +333,12 @@
     "houseRulesHint": "Used for every new game. A game in progress keeps its rules.",
     "rethrowOnOne": "Throw again on a 1, like a 4 or 8",
     "hitNeedsEntry": "A hit pawn needs a 4 or 8 to start again",
-    "bonusOnHome": "Throw again when a pawn reaches home"
+    "bonusOnHome": "Throw again when a pawn reaches home",
+    "boardTheme": "Board theme",
+    "soundAndPlay": "Sound and play",
+    "soundSub": "Shells, wooden taps, drums",
+    "hapticsSub": "On throws, hits and home",
+    "calloutsSub": "Says the number aloud",
+    "motionNote": "Reduced motion follows your phone’s setting: shakes, confetti and spinning shells are left out."
   }
 }

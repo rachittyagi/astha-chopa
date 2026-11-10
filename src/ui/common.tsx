@@ -1,68 +1,84 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
-import { AccessibilityInfo, Modal, Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
+import { AccessibilityInfo, Modal, Platform, Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useRouter } from 'expo-router';
 
-import { font, MIN_TOUCH, radius, space, useThemedStyles, type Theme } from './theme';
+import { Icon } from './icons';
+import { font, fonts, MIN_TOUCH, radius, shadow, space, useThemedStyles, type Theme } from './theme';
 
 const makeStyles = (c: Theme) => ({
   screen: { flex: 1, backgroundColor: c.background },
-  content: { padding: space.lg, gap: space.md },
+  content: { padding: space.lg, gap: space.md, width: '100%' as const, maxWidth: 640, alignSelf: 'center' as const },
   fill: { flex: 1 },
-  title: { fontSize: font.title, fontWeight: '700' as const, color: c.text },
-  body: { fontSize: font.body, color: c.text, lineHeight: 26 },
-  muted: { fontSize: font.label, color: c.muted },
+  title: { fontSize: font.title, fontFamily: fonts.display, color: c.accent, lineHeight: font.title * 1.15 },
+  body: { fontSize: font.body, fontFamily: fonts.body, color: c.text, lineHeight: 24 },
+  muted: { fontSize: font.label, fontFamily: fonts.body, color: c.muted, lineHeight: 21 },
+  overline: { fontSize: font.overline, fontFamily: fonts.bold, letterSpacing: 1, color: '#6B4F38', marginTop: space.xs, textTransform: 'uppercase' as const },
+  card: { backgroundColor: c.surface, borderRadius: 18, padding: space.md, gap: space.md, borderWidth: 1, borderColor: c.line },
   button: {
     minHeight: 56,
-    borderRadius: radius.md,
+    borderRadius: 18,
     paddingHorizontal: space.xl,
     alignItems: 'center' as const,
     justifyContent: 'center' as const,
   },
-  primary: { backgroundColor: c.accent },
-  secondary: { backgroundColor: c.surface, borderWidth: 2, borderColor: c.accent },
-  // Pressed and disabled look different: a press darkens and sinks a little, disabled fades.
-  pressed: { opacity: 0.8, transform: [{ scale: 0.98 }] },
+  primary: { backgroundColor: c.accent, boxShadow: `0 4px 0 ${c.accentEdge}`, marginBottom: 4 },
+  secondary: { backgroundColor: c.surface, borderWidth: 2, borderColor: c.lineStrong },
+  danger: { backgroundColor: c.dangerSurface, borderWidth: 2, borderColor: '#B3261E' },
+  ghost: { backgroundColor: 'transparent', minHeight: 50 },
+  // Pressed and disabled look different: a press sinks onto its edge, disabled fades.
+  pressed: { opacity: 0.85, transform: [{ translateY: 2 }] },
+  pressedPrimary: { boxShadow: `0 2px 0 ${c.accentEdge}` },
   disabled: { opacity: 0.4 },
-  buttonText: { fontSize: font.button, fontWeight: '600' as const, textAlign: 'center' as const },
-  large: { minHeight: 72, borderRadius: radius.lg },
-  largeText: { fontSize: 26, fontWeight: '800' as const },
-  primaryText: { color: c.onAccent },
-  secondaryText: { color: c.accent },
-  segmented: { flexDirection: 'row' as const, flexWrap: 'wrap' as const, gap: space.sm },
+  buttonText: { fontSize: font.button, fontFamily: fonts.semibold, textAlign: 'center' as const },
+  large: { minHeight: 64, borderRadius: 20, marginBottom: 5, boxShadow: `0 5px 0 ${c.accentEdge}` },
+  largeText: { fontSize: 24, fontFamily: fonts.heading },
+  primaryText: { color: c.onAccent, fontFamily: fonts.bold },
+  secondaryText: { color: c.ink },
+  dangerText: { color: c.danger },
+  ghostText: { color: c.accent },
+  segmented: {
+    flexDirection: 'row' as const,
+    flexWrap: 'wrap' as const,
+    gap: 4,
+    padding: 4,
+    borderRadius: 14,
+    backgroundColor: c.track,
+  },
   segment: {
+    flexGrow: 1,
+    flexBasis: 0,
     minHeight: 48,
-    paddingHorizontal: space.md,
-    borderRadius: radius.sm,
-    borderWidth: 1.5,
-    borderColor: c.accent,
+    paddingHorizontal: space.sm,
+    borderRadius: 10,
+    alignItems: 'center' as const,
     justifyContent: 'center' as const,
-    backgroundColor: c.surface,
   },
   segmentSelected: { backgroundColor: c.accent },
-  segmentText: { color: c.accent, fontWeight: '600' as const, fontSize: 17 },
-  segmentTextSelected: { color: c.onAccent },
+  segmentText: { color: c.ink, fontFamily: fonts.semibold, fontSize: 15, textAlign: 'center' as const },
+  segmentTextSelected: { color: c.onAccent, fontFamily: fonts.bold },
   choiceRow: {
-    minHeight: 56,
+    minHeight: 60,
     flexDirection: 'row' as const,
     alignItems: 'center' as const,
     gap: space.md,
     paddingVertical: space.sm,
     paddingHorizontal: space.md,
-    borderRadius: radius.md,
+    borderRadius: 14,
     backgroundColor: c.surface,
+    borderWidth: 1,
+    borderColor: c.line,
   },
   choiceText: { flex: 1, gap: 2 },
-  choiceLabel: { fontSize: 15, color: c.muted, fontWeight: '600' as const },
-  choiceValue: { fontSize: 17, color: c.text, fontWeight: '600' as const },
-  chevron: { fontSize: 26, color: c.accent },
+  choiceLabel: { fontSize: 13, color: c.muted, fontFamily: fonts.semibold },
+  choiceValue: { fontSize: 16, color: c.text, fontFamily: fonts.semibold },
   overlay: { flex: 1, backgroundColor: c.overlay, justifyContent: 'center' as const, padding: space.xl },
   sheet: {
     backgroundColor: c.surface,
-    borderRadius: radius.lg,
-    padding: space.lg,
+    borderRadius: radius.sheet,
+    padding: space.xl,
     gap: space.sm,
     maxWidth: 480,
     maxHeight: '100%' as const,
@@ -70,20 +86,21 @@ const makeStyles = (c: Theme) => ({
     flexGrow: 0,
     width: '100%' as const,
     alignSelf: 'center' as const,
+    ...shadow.overlay,
   },
-  sheetTitle: { fontSize: 22, fontWeight: '800' as const, color: c.text, marginBottom: 4 },
-  sheetBody: { fontSize: font.body - 1, lineHeight: 24, color: c.text, marginBottom: space.xs },
+  sheetTitle: { fontSize: 28, fontFamily: fonts.display, color: c.accent, marginBottom: 4, lineHeight: 32 },
+  sheetBody: { fontSize: font.body, fontFamily: fonts.body, lineHeight: 24, color: c.muted, marginBottom: space.xs },
   option: {
     minHeight: 52,
     flexDirection: 'row' as const,
     alignItems: 'center' as const,
     gap: 12,
     paddingHorizontal: 12,
-    borderRadius: 10,
+    borderRadius: 14,
     borderWidth: 1.5,
-    borderColor: c.muted,
+    borderColor: c.lineStrong,
   },
-  optionSelected: { borderColor: c.accent, borderWidth: 2.5 },
+  optionSelected: { borderColor: c.accent, borderWidth: 2.5, backgroundColor: '#FFF8EC' },
   radio: {
     width: 22,
     height: 22,
@@ -94,25 +111,38 @@ const makeStyles = (c: Theme) => ({
     justifyContent: 'center' as const,
   },
   radioDot: { width: 11, height: 11, borderRadius: 6, backgroundColor: c.accent },
-  optionText: { flex: 1, fontSize: 17, color: c.text },
-  header: { flexDirection: 'row' as const, alignItems: 'center' as const, gap: space.sm, marginLeft: -space.sm },
+  optionText: { flex: 1, fontSize: 16, fontFamily: fonts.body, color: c.text },
+  header: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    gap: 6,
+    minHeight: 64,
+    marginHorizontal: -space.lg,
+    marginTop: -space.lg,
+    marginBottom: space.xs,
+    paddingHorizontal: space.sm,
+    backgroundColor: c.surface,
+    borderBottomWidth: 1,
+    borderBottomColor: c.line,
+  },
   back: {
     minHeight: MIN_TOUCH,
     minWidth: MIN_TOUCH,
-    paddingHorizontal: space.sm,
-    flexDirection: 'row' as const,
     alignItems: 'center' as const,
-    borderRadius: radius.sm,
+    justifyContent: 'center' as const,
+    borderRadius: radius.md,
   },
-  backText: { color: c.accent, fontSize: font.label, fontWeight: '700' as const },
-  headerTitle: { flex: 1, fontSize: font.heading, fontWeight: '800' as const, color: c.text },
+  headerTitle: { flex: 1, fontSize: font.heading, fontFamily: fonts.heading, color: c.text },
   toggle: {
-    minHeight: MIN_TOUCH,
+    minHeight: 58,
     flexDirection: 'row' as const,
     alignItems: 'center' as const,
     justifyContent: 'space-between' as const,
     gap: 12,
   },
+  toggleText: { flex: 1, gap: 1 },
+  toggleLabel: { fontSize: 15, fontFamily: fonts.semibold, color: c.text, lineHeight: 21 },
+  toggleSub: { fontSize: 13, fontFamily: fonts.body, color: c.muted },
 });
 
 export function Screen({ children, scroll = false }: { children: ReactNode; scroll?: boolean }) {
@@ -131,18 +161,23 @@ export function Screen({ children, scroll = false }: { children: ReactNode; scro
   );
 }
 
+export type ButtonVariant = 'primary' | 'secondary' | 'danger' | 'ghost';
+
 export function Button({
   label,
   onPress,
   variant = 'primary',
   disabled = false,
   size = 'normal',
+  dense = false,
 }: {
   label: string;
   onPress(): void;
-  variant?: 'primary' | 'secondary';
+  variant?: ButtonVariant;
   disabled?: boolean;
-  /** `large` is the one main action on a screen (Play, Throw). */
+  /** Less side padding, for buttons sharing a row. */
+  dense?: boolean;
+  /** `large` is the one main action on a screen (Play, Continue). */
   size?: 'normal' | 'large';
 }) {
   const { styles } = useThemedStyles(makeStyles);
@@ -156,22 +191,22 @@ export function Button({
       accessibilityState={{ disabled }}
       style={({ pressed }) => [
         styles.button,
-        size === 'large' && styles.large,
-        primary ? styles.primary : styles.secondary,
+        styles[variant],
+        primary && size === 'large' && styles.large,
+        dense && { paddingHorizontal: space.md },
         pressed && styles.pressed,
+        pressed && primary && styles.pressedPrimary,
         disabled && styles.disabled,
       ]}
     >
-      <Text
-        style={[styles.buttonText, size === 'large' && styles.largeText, primary ? styles.primaryText : styles.secondaryText]}
-      >
+      <Text style={[styles.buttonText, styles[`${variant}Text`], primary && size === 'large' && styles.largeText]}>
         {label}
       </Text>
     </Pressable>
   );
 }
 
-/** A row of mutually exclusive options. */
+/** A row of mutually exclusive options on a recessed track. */
 export function Segmented<T extends string | boolean>({
   options,
   value,
@@ -196,7 +231,7 @@ export function Segmented<T extends string | boolean>({
             onPress={() => onChange(option)}
             accessibilityRole="radio"
             accessibilityState={{ selected }}
-            style={({ pressed }) => [styles.segment, selected && styles.segmentSelected, pressed && styles.pressed]}
+            style={({ pressed }) => [styles.segment, selected && styles.segmentSelected, pressed && !selected && { opacity: 0.7 }]}
           >
             <Text style={[styles.segmentText, selected && styles.segmentTextSelected]}>{labelOf(option)}</Text>
           </Pressable>
@@ -224,7 +259,7 @@ export function ChoiceRow<T extends string | boolean>({
   onChange(option: T): void;
 }) {
   const { t } = useTranslation();
-  const { styles } = useThemedStyles(makeStyles);
+  const { theme, styles } = useThemedStyles(makeStyles);
   const [open, setOpen] = useState(false);
   const close = () => setOpen(false);
   return (
@@ -233,15 +268,15 @@ export function ChoiceRow<T extends string | boolean>({
         onPress={() => setOpen(true)}
         accessibilityRole="button"
         accessibilityLabel={`${label}: ${labelOf(value)}`}
-        style={({ pressed }) => [styles.choiceRow, pressed && styles.pressed]}
+        style={({ pressed }) => [styles.choiceRow, pressed && { opacity: 0.8 }]}
       >
         <View style={styles.choiceText}>
           <Text style={styles.choiceLabel}>{label}</Text>
           <Text style={styles.choiceValue}>{labelOf(value)}</Text>
         </View>
-        <Text style={styles.chevron} importantForAccessibility="no" accessibilityElementsHidden>
-          ›
-        </Text>
+        <View style={{ transform: [{ rotate: '180deg' }] }}>
+          <Icon name="back" size={20} color={theme.accent} strokeWidth={2.4} />
+        </View>
       </Pressable>
       <Modal transparent visible={open} animationType="fade" onRequestClose={close}>
         <View style={styles.overlay}>
@@ -317,20 +352,52 @@ export function ConfirmSheet({
   );
 }
 
-export function Toggle({ label, value, onChange }: { label: string; value: boolean; onChange(v: boolean): void }) {
+export function Toggle({
+  label,
+  sub,
+  value,
+  onChange,
+}: {
+  label: string;
+  /** A short line under the label saying what the setting does. */
+  sub?: string;
+  value: boolean;
+  onChange(v: boolean): void;
+}) {
   const { theme, styles } = useThemedStyles(makeStyles);
   return (
     <View style={styles.toggle}>
-      <Text style={styles.body}>{label}</Text>
+      <View style={styles.toggleText}>
+        <Text style={styles.toggleLabel}>{label}</Text>
+        {sub && <Text style={styles.toggleSub}>{sub}</Text>}
+      </View>
       <Switch
         value={value}
         onValueChange={onChange}
         accessibilityLabel={label}
-        trackColor={{ true: theme.accent, false: theme.muted }}
-        thumbColor={theme.surface}
+        trackColor={{ true: theme.accent, false: '#D8D2C8' }}
+        thumbColor="#FFFFFF"
+        // The web switch has its own prop for the thumb when on; native uses thumbColor for both.
+        {...(Platform.OS === 'web' ? { activeThumbColor: '#FFFFFF' } : {})}
       />
     </View>
   );
+}
+
+/** A small capitalised label above a group of controls (QUICK CHOICE, SEATS, RULES). */
+export function Overline({ children }: { children: ReactNode }) {
+  const { styles } = useThemedStyles(makeStyles);
+  return (
+    <Text style={styles.overline} accessibilityRole="header">
+      {children}
+    </Text>
+  );
+}
+
+/** A cream card with a hairline edge, for grouped settings and rules. */
+export function Card({ children, style }: { children: ReactNode; style?: object }) {
+  const { styles } = useThemedStyles(makeStyles);
+  return <View style={[styles.card, style]}>{children}</View>;
 }
 
 /** True when the system asks for less motion (R-A11Y): decorative animation is then left out. */
@@ -355,7 +422,7 @@ export function useReduceMotion() {
 export function Header({ title, onBack }: { title: string; onBack?(): void }) {
   const { t } = useTranslation();
   const router = useRouter();
-  const { styles } = useThemedStyles(makeStyles);
+  const { theme, styles } = useThemedStyles(makeStyles);
   const back = onBack ?? (() => (router.canGoBack() ? router.back() : router.replace('/')));
   return (
     <View style={styles.header}>
@@ -363,9 +430,9 @@ export function Header({ title, onBack }: { title: string; onBack?(): void }) {
         onPress={back}
         accessibilityRole="button"
         accessibilityLabel={t('common.back')}
-        style={({ pressed }) => [styles.back, pressed && styles.pressed]}
+        style={({ pressed }) => [styles.back, pressed && { opacity: 0.6 }]}
       >
-        <Text style={styles.backText}>{`‹ ${t('common.back')}`}</Text>
+        <Icon name="back" color={theme.accent} strokeWidth={2.4} />
       </Pressable>
       <Text style={styles.headerTitle} accessibilityRole="header" numberOfLines={2}>
         {title}

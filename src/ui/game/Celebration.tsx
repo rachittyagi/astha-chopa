@@ -9,11 +9,11 @@ import { settingsStore } from '@/store/app';
 import { Button, useReduceMotion } from '@/ui/common';
 import { SeatMark } from '@/ui/game/Controls';
 import { Trophy } from '@/ui/game/Trophy';
-import { PAWN_COLORS, useThemedStyles, type Theme } from '@/ui/theme';
+import { fonts, PAWN_COLORS, shadow, useThemedStyles, type Theme } from '@/ui/theme';
 
 const PIECES = 40;
 const FALL_MS = 2600;
-const FESTIVE = ['#f59e0b', '#e11d48', '#0ea5e9', '#22c55e', '#a855f7', '#f97316'];
+const FESTIVE = ['#C23B2A', '#E39B0B', '#2F7D4E', '#2E5AA8', '#F2B632', '#E85D75', '#F28C28'];
 
 interface Piece {
   x: number;
@@ -28,7 +28,8 @@ const makeStyles = (c: Theme) => ({
   overlay: { flex: 1, backgroundColor: c.overlay, justifyContent: 'center' as const, alignItems: 'center' as const },
   card: {
     backgroundColor: c.surface,
-    borderRadius: 24,
+    borderRadius: 28,
+    ...shadow.overlay,
     paddingVertical: 28,
     paddingHorizontal: 24,
     alignItems: 'center' as const,
@@ -36,8 +37,8 @@ const makeStyles = (c: Theme) => ({
     width: '86%' as const,
     maxWidth: 420,
   },
-  title: { fontSize: 32, fontWeight: '800' as const, color: c.text, textAlign: 'center' as const },
-  subtitle: { fontSize: 20, color: c.muted, textAlign: 'center' as const },
+  title: { fontSize: 36, lineHeight: 42, fontFamily: fonts.display, color: c.accent, textAlign: 'center' as const, flexShrink: 1 },
+  subtitle: { fontSize: 18, fontFamily: fonts.body, color: c.muted, textAlign: 'center' as const },
   row: { flexDirection: 'row' as const, alignItems: 'center' as const, gap: 10 },
   button: { alignSelf: 'stretch' as const },
 });
